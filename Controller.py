@@ -9,7 +9,7 @@ class Controller:
 
         self.identifyModule = IdentifyModule()
         self.photo_path = "photo.jpg"
-        self.courses = []
+        self.course_list = [Course('course1', '0001'), Course('course2', '0002'), Course('course3', '0003'), ]
         self.operating_course = None
 
         self.open_homepage()
@@ -50,11 +50,11 @@ class Controller:
         pass
 
     def open_a_course(self, index):
-        self.operating_course = self.courses[index]
+        self.operating_course = self.course_list[index]
         # set UI 進入對課程操作頁面
 
     def adding_course(self):
         # 使用者輸入 name, ID
         name = ""
         ID = ""
-        self.courses.append(Course(name, ID))
+        self.course_list.append(Course(name, ID))
