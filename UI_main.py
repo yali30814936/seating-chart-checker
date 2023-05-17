@@ -100,4 +100,4 @@ class Application:
         self.course_list.append(Course(name, ID))
 
 
-ctr = Controller()
+ctr = Application()
