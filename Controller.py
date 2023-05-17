@@ -14,6 +14,8 @@ class Controller:
 
         self.open_homepage()
 
+        # push test
+
     def check_rollcall(self):
         student_list = self.operating_course.get_student_list()
         result = self.identifyModule.check_rollcall(self.photo_path, student_list)
