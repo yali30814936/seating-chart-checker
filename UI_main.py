@@ -8,16 +8,16 @@ from tkinter import filedialog
 from PIL import ImageTk, Image
 
 
-class Controller:
+class Application:
     def __init__(self):
         # set UI...
 
         self.identifyModule = IdentifyModule()
         self.photo_path = "photo.jpg"
         self.course_list = [
-            Course("course1", "0001"),
-            Course("course2", "0002"),
-            Course("course3", "0003"),
+            Course("人格發展與精神分析", "B9M014TG"),
+            Course("戰爭、武器、流亡詩人與全球公民", "B9M014V8"),
+            Course("性別、身體與意識型態", "B9M014TV"),
         ]
         self.operating_course = None
 
