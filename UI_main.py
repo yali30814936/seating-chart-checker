@@ -25,7 +25,13 @@ class Application:
 
     def check_rollcall(self):
         student_list = self.operating_course.get_student_list()
-        result = self.identifyModule.check_rollcall(self.photo_path, student_list)
+        # result = self.identifyModule.check_rollcall(self.photo_path, student_list)
+        result = RollcallRecord({
+                    "00000001": 0,
+                    "00000002": 0,
+                    "00000003": 0,
+                })
+        add_rollcall_record("1120601", result)
         # set UI show the result
 
     def open_student_list(self):
@@ -42,7 +48,7 @@ class Application:
         ID = ""
         self.operating_course.remove_student(ID)
 
-    def open_rollcall_records(self):
+    def show_rollcall_records(self):
         dates = self.operating_course.get_dates_of_rollcall_records()
         # set UI 列出所有日期的按鈕
 
