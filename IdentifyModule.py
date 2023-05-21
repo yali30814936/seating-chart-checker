@@ -4,11 +4,12 @@ from google.cloud import vision
 
 
 # 設定 Google API 憑證環境變數
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = r'source/seating-chart-checker-2389976159cf.json'
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = r'resource/seating-chart-checker-2389976159cf.json'
 
 
 def detect_text(imgPath):
     """
+    Use Google cloud vision API to detect text.
     return: a list of detected words
     """
 
@@ -28,9 +29,10 @@ def detect_text(imgPath):
     return texts[0].description.split('\n')
 
 
-def check_rollcall(imgPath, student_list=[]):
+def check_rollcall(imgPath, student_list):
     """
-    student_list: currently not consider three-word name
+    Detect text on the image, and match to the student list, and return the attendance status.
+    student_list: a list of all student names, currently haven't considered non-three-word names yet
     return: a dict, key for all students in student_list, value for their attendance status (0:缺席 1:出席)
     """
 
@@ -39,8 +41,10 @@ def check_rollcall(imgPath, student_list=[]):
     # --- 辨識文字 ---
 
     # word_list = detect_text(imgPath)
-    word_list = ['日期:QCT/5', '俞浩君', '某洢岑', '張文虹', '范文瑄', 'FIL', 'TTF', '講臺', '陳長', '戴柏儀', '劉明融', '姜紹淳', 'TOO', '技政偉孔繁道張慈芸大型陳慧慧', '劉品萱', '周远', '省達', '强思淇', '陈宇軒', '关系数', '天家', '陳芃铵', '黄雅欣', '駱宥亘|郭家佑']
-    print(word_list)
+    word_list = ['日期:QCT/5', '俞浩君', '某洢岑', '張文虹', '范文瑄', 'FIL', 'TTF', '講臺', '陳長', '戴柏儀', '劉明融', '姜紹淳',
+                 'TOO', '技政偉孔繁道張慈芸大型陳慧慧', '劉品萱', '周远', '省達', '强思淇', '陈宇軒', '关系数', '天家', '陳芃铵',
+                 '黄雅欣', '駱宥亘|郭家佑']  # detect_text('resource/sheet_samples/1.jpg') 出來的結果
+    print('detected words\t:', word_list)
 
     # --- 配對演算法 ---
 
@@ -70,7 +74,7 @@ def check_rollcall(imgPath, student_list=[]):
         unmatched_words.add(ele)
     for ele in to_remove:
         unmatched_words.remove(ele)
-    # print(unmatched_words)
+    # print('unmatched words\t:', unmatched_words)
 
     # # --- 兩個字相同且其相對位置相同的 再配對 ---
     target = dict()
@@ -108,7 +112,7 @@ def check_rollcall(imgPath, student_list=[]):
         unmatched_words.add(ele)
     for ele in to_remove:
         unmatched_words.remove(ele)
-    print(unmatched_words)
+    print('unmatched words\t:', unmatched_words)
 
     # # --- 配對剩餘的 最好標示給使用者檢查 ---
 
@@ -124,8 +128,8 @@ def check_rollcall(imgPath, student_list=[]):
 
 if __name__ == '__main__':
     student_list = ['俞浩君', '葉洢岑', '劉昀融', '張慈芸', '周子丞']
-    attendance_record = check_rollcall('source/sheet_samples/1.jpg', student_list)
-    print(attendance_record)
+    attendance_record = check_rollcall('resource/sheet_samples/1.jpg', student_list)
+    print('出席紀錄\t\t\t:', attendance_record)
 
 
 # if __name__ == '__main__':
