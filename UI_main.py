@@ -1,5 +1,6 @@
-from IdentifyModule import IdentifyModule
+import IdentifyModule
 from Course import Course
+
 from tkinter import *
 from tkinter import messagebox
 from tkinter import ttk
@@ -12,7 +13,6 @@ class Application:
     def __init__(self):
         # set UI...
 
-        self.identifyModule = IdentifyModule()
         self.photo_path = "photo.jpg"
         self.course_list = [
             Course("人格發展與精神分析", "B9M014TG"),
@@ -25,14 +25,16 @@ class Application:
 
     def check_rollcall(self):
         student_list = self.operating_course.get_student_list()
-        # result = self.identifyModule.check_rollcall(self.photo_path, student_list)
+        # result = IdentifyModule.check_rollcall(self.photo_path, student_list)
         result = RollcallRecord({
                     "00000001": 0,
                     "00000002": 0,
                     "00000003": 0,
                 })
-        add_rollcall_record("1120601", result)
-        # set UI show the result
+        date = "1120601"
+        self.operating_course.add_rollcall_record(date, result)
+        # switch to rollcall_record page to show the result
+        self.open_a_rollcall_record(date)
 
     def open_student_list(self):
         student_list = self.operating_course.get_student_list()
@@ -61,6 +63,8 @@ class Application:
         pass
 
     def open_homepage(self):
+        self.operating_course = None
+
         # set UI 把所有課程按鈕列出來
         root = Tk()
         root.geometry("1000x700")
