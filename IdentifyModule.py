@@ -54,8 +54,16 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
 
     # --- 配對演算法 ---
 
-    unmatched_students = set(student_list)
     unmatched_words = set(word_list)
+    unmatched_students = set(student_list)
+    # 防呆有學生完全同名
+    repeated_students = set()
+    if len(unmatched_students) != len(student_list):
+        for stud in unmatched_students:
+            if student_list.count(stud) > 1:
+                repeated_students.add(stud)
+    for stud in repeated_students:
+        unmatched_students.remove(stud)
 
     # # --- 完全相等的 先配對 ---
     target = unmatched_students
@@ -66,7 +74,10 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
         c = 0
         while c < len(word)-2:
             if word[c:c+3] in target:
-                unmatched_students.remove(word[c:c+3])
+                try:
+                    unmatched_students.remove(word[c:c+3])
+                except KeyError:
+                    print('文字重複辨識，或兩人名字不相同辨識成完全相同，導致重複 remove / 學生名字:', target[word[c:c+3]])
                 to_remove.add(word)
                 # 若此為長字串，就以該三字做分割，切出兩個字串，空字串就不用切出來了
                 if c != 0:
@@ -143,6 +154,9 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
     for student in student_list:
         attendance[student] = 0 if student in unmatched_students else 1
 
+    for student in repeated_students:
+        attendance[student] = 0     # 給老師人工補點名
+
     return attendance
 
 
@@ -153,6 +167,7 @@ if __name__ == '__main__':
                     '陳振榕', '蔡宇軒', '戴柏儀']
 
     # attendance_record = check_rollcall('resource/sheet_samples/1.jpg', student_list)
+    # print('出席紀錄\t\t\t:', attendance_record)
 
     total = 0
     for i in range(1, 13):
