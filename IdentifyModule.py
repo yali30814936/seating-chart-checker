@@ -7,11 +7,10 @@ from google.cloud import vision
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = r'resource/seating-chart-checker-2389976159cf.json'
 
 
-def detect_text(imgPath: str):
+def detect_text(imgPath: str) -> list:
     """
     Use Google cloud vision API to detect text.
-
-    return: a list of detected words
+    return a list of detected words.
     """
 
     client = vision.ImageAnnotatorClient()
@@ -30,12 +29,17 @@ def detect_text(imgPath: str):
     return texts[0].description.split('\n')
 
 
-def check_rollcall(imgPath: str, student_list: list):
+def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
     """
     Detect text on the image, and match to the student list, and return the attendance status.
 
-    student_list: a list of all student names, currently haven't considered non-three-word names yet
-    return: a dict, key for all students in student_list, value for their attendance status (0:缺席 1:出席)
+    Args:
+        imgPath (str): the image path to detect.
+        student_list (list): a list of all student names, currently haven't considered non-three-word names yet.
+    Returns:
+        dict[str, int]: attendance status.
+            str: all students in student_list.
+            int: their attendance status. (0:缺席 1:出席)
     """
 
     # --- 影像前處理 ---
