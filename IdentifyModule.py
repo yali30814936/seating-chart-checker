@@ -76,19 +76,20 @@ def check_rollcall(imgPath: str, student_list: list):
         unmatched_words.add(ele)
     for ele in to_remove:
         unmatched_words.remove(ele)
-    # print('unmatched words\t:', unmatched_words)
+    print('unmatched words\t:', unmatched_words)
 
     # # --- 兩個字相同且其相對位置相同的 再配對 ---
     target = dict()
     to_remove = set()
     for name in unmatched_students:
         for mask in [name[0:2] + '.', name[0] + '.' + name[2], '.' + name[1:3]]:
+            # 若有兩人名字中有兩字相同且位置相同，做 mask 就會重複，故不能放進 target
             if mask in target:
                 to_remove.add(mask)     # 可能第三個人名字有兩字相同的，所以不能直接刪除
             else:
                 target[mask] = name
     for ele in to_remove:
-        target.remove(ele)
+        del target[ele]
     # print(target)
     to_add, to_remove = set(), set()
     for word in unmatched_words:
@@ -100,7 +101,7 @@ def check_rollcall(imgPath: str, student_list: list):
                     try:
                         unmatched_students.remove(target[mask])
                     except KeyError:
-                        print("兩人名字兩字不相同辨識成相同，重複 remove。學生名字:", target[mask])
+                        print('文字重複辨識，或兩人名字兩字不相同辨識成相同，導致重複 remove / 學生名字:', target[mask], '/ mask:', mask)
                     to_remove.add(word)
                     break
             continue
@@ -111,7 +112,7 @@ def check_rollcall(imgPath: str, student_list: list):
                     try:
                         unmatched_students.remove(target[mask])
                     except KeyError:
-                        print("兩人名字兩字不相同辨識成相同，重複 remove。學生名字:", target[mask])
+                        print('文字重複辨識，或兩人名字兩字不相同辨識成相同，導致重複 remove / 學生名字:', target[mask], '/ mask:', mask)
                     to_remove.add(word)
                     # 如果 '.' 不是夾在中間，就只要以兩字做分割，否則一樣三字
                     # 但若 '.' 的那側只剩它一個字了，代表那個字大概只是辨識錯字，就不用切出來了
@@ -147,8 +148,19 @@ if __name__ == '__main__':
                     '陳晏慈', '葉洢岑', '羅苡心', '黃偉綸', '陳慧雲', '陳芃銨', '劉凱菁', '張慈芸', '孔繁瑄', '周子丞', '王大埊',
                     '陳振榕', '蔡宇軒', '戴柏儀']
 
-    attendance_record = check_rollcall('resource/sheet_samples/12.jpg', student_list)
-    print('出席紀錄\t\t\t:', attendance_record)
+    # attendance_record = check_rollcall('resource/sheet_samples/1.jpg', student_list)
+
+    total = 0
+    for i in range(1, 13):
+        print('\n[test '+str(i)+'.jpg]')
+
+        attendance_record = check_rollcall('resource/sheet_samples/'+str(i)+'.jpg', student_list)
+
+        print('出席紀錄\t\t\t:', attendance_record)
+        count = sum(value == 1 for value in attendance_record.values())
+        total += count
+        print('出席率:', count/len(student_list))
+    print('\n平均出席率:', total/12/len(student_list))
 
 
 # if __name__ == '__main__':
