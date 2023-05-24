@@ -50,7 +50,7 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
     # word_list = ['日期:QCT/5', '俞浩君', '某洢岑', '張文虹', '范文瑄', 'FIL', 'TTF', '講臺', '陳長', '戴柏儀', '劉明融', '姜紹淳',
     #              'TOO', '技政偉孔繁道張慈芸大型陳慧慧', '劉品萱', '周远', '省達', '强思淇', '陈宇軒', '关系数', '天家', '陳芃铵',
     #              '黄雅欣', '駱宥亘|郭家佑']  # detect_text('resource/sheet_samples/1.jpg') 出來的結果
-    print('detected words\t:', word_list)
+    # print('detected words\t:', word_list)
 
     # --- 配對演算法 ---
 
@@ -77,7 +77,8 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
                 try:
                     unmatched_students.remove(word[c:c+3])
                 except KeyError:
-                    print('文字重複辨識，或兩人名字不相同辨識成完全相同，導致重複 remove / 學生名字:', target[word[c:c+3]])
+                    pass
+                    # print('文字重複辨識，或兩人名字不相同辨識成完全相同，導致重複 remove / 學生名字:', target[word[c:c+3]])
                 to_remove.add(word)
                 # 若此為長字串，就以該三字做分割，切出兩個字串，空字串就不用切出來了
                 if c != 0:
@@ -91,7 +92,7 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
         unmatched_words.add(ele)
     for ele in to_remove:
         unmatched_words.remove(ele)
-    print('unmatched words\t:', unmatched_words)
+    # print('unmatched words\t:', unmatched_words)
 
     # # --- 兩個字相同且其相對位置相同的 再配對 ---
     target = dict()
@@ -116,7 +117,8 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
                     try:
                         unmatched_students.remove(target[mask])
                     except KeyError:
-                        print('文字重複辨識，或兩人名字兩字不相同辨識成相同，導致重複 remove / 學生名字:', target[mask], '/ mask:', mask)
+                        pass
+                        # print('文字重複辨識，或兩人名字兩字不相同辨識成相同，導致重複 remove / 學生名字:', target[mask], '/ mask:', mask)
                     to_remove.add(word)
                     break
             continue
@@ -127,7 +129,8 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
                     try:
                         unmatched_students.remove(target[mask])
                     except KeyError:
-                        print('文字重複辨識，或兩人名字兩字不相同辨識成相同，導致重複 remove / 學生名字:', target[mask], '/ mask:', mask)
+                        pass
+                        # print('文字重複辨識，或兩人名字兩字不相同辨識成相同，導致重複 remove / 學生名字:', target[mask], '/ mask:', mask)
                     to_remove.add(word)
                     # 如果 '.' 不是夾在中間，就只要以兩字做分割，否則一樣三字
                     # 但若 '.' 的那側只剩它一個字了，代表那個字大概只是辨識錯字，就不用切出來了
@@ -143,7 +146,7 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
         unmatched_words.add(ele)
     for ele in to_remove:
         unmatched_words.remove(ele)
-    print('unmatched words\t:', unmatched_words)
+    # print('unmatched words\t:', unmatched_words)
 
     # # --- 配對剩餘的 最好標示給使用者檢查 ---
 
