@@ -8,9 +8,9 @@ class TestIdentifyModule(TestCase):
     def test_check_rollcall(self):
         """Test check_rollcall()
         """
-        dir = "resource/TestCase/2/"
+        dir = "resource/TestCase/1/"
         for i in range(1, 4):
-            with self.subTest(f"IdTest_2-{i}"):
+            with self.subTest(f"IdTest_1-{i}"):
                 with open(f"{dir}{i}.csv", encoding='utf-8') as fp:
                     # Load test data
                     rows = csv.reader(fp)
@@ -29,7 +29,7 @@ class TestIdentifyModule(TestCase):
         """
         # logger = logging.getLogger(__name__)
         # logger.setLevel(logging.INFO)
-        dir = "resource/TestCase/1/"
+        dir = "resource/TestCase/2/"
         for i in range(1, 13):
             with self.subTest(f"IdTest_1-{i}"):
                 with open(f"{dir}{i}.csv", encoding='utf-8') as file:
@@ -55,7 +55,7 @@ class TestIdentifyModule(TestCase):
                                 fp += 1
                             else:
                                 fn += 1
-                    logging.warning(f"IdTest_1-{i}: Recall = {tp}/{tp}+{fn} = {tp/(tp+fn)}")
+                    logging.warning(f"IdTest_2-{i}: Recall = {tp}/{tp}+{fn} = {tp/(tp+fn)}")
                     # logging.warning(f"IdTest_1-{i}: False Recall = {tn}/{tn}+{fp} = {tn/(tn+fp)}")
                     # self.assertDictEqual(result, expected)
 # if __name__ == '__main__':
