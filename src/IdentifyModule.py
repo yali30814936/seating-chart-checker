@@ -42,17 +42,17 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
             int: their attendance status. (0:缺席 1:出席)
     """
 
-    # --- 影像前處理 ---
+    # -1. 影像前處理
 
-    # --- 辨識文字 ---
+    # -2. 辨識文字
 
     word_list = detect_text(imgPath)
     # word_list = ['日期:QCT/5', '俞浩君', '某洢岑', '張文虹', '范文瑄', 'FIL', 'TTF', '講臺', '陳長', '戴柏儀', '劉明融', '姜紹淳',
     #              'TOO', '技政偉孔繁道張慈芸大型陳慧慧', '劉品萱', '周远', '省達', '强思淇', '陈宇軒', '关系数', '天家', '陳芃铵',
     #              '黄雅欣', '駱宥亘|郭家佑']  # detect_text('resource/sheet_samples/1.jpg') 出來的結果
-    # print('detected words\t:', word_list)
+    print('detected words\t:', word_list)
 
-    # --- 配對演算法 ---
+    # -3. 配對演算法
 
     unmatched_words = set(word_list)
     unmatched_students = set(student_list)
@@ -65,27 +65,31 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
     for stud in repeated_students:
         unmatched_students.remove(stud)
 
-    # # --- 完全相等的 先配對 ---
+    # -3.1 完全相等的 先配對
+
     target = unmatched_students
-    to_add, to_remove = set(), set()
+    to_add, to_remove = [], []
     for word in unmatched_words:
         if len(word) < 3:
             continue
         c = 0
-        while c < len(word)-2:
+        while c < len(word)-2:  # c只會逐步+1，或可能在途中歸 0 並且減少 len(word)
             if word[c:c+3] in target:
                 try:
                     unmatched_students.remove(word[c:c+3])
                 except KeyError:
                     pass
                     # print('文字重複辨識，或兩人名字不相同辨識成完全相同，導致重複 remove / 學生名字:', target[word[c:c+3]])
-                to_remove.add(word)
+                to_remove.append(word)
                 # 若此為長字串，就以該三字做分割，切出兩個字串，空字串就不用切出來了
                 if c != 0:
-                    to_add.add(word[:c])
+                    to_add.append(word[:c])
                 if c+3 != len(word):
-                    to_add.add(word[c+3:])
-                c += 3
+                    word = word[c+3:]   # 將當前處理的 word 替換為剩下的這段
+                    to_add.append(word)
+                    c = 0   # 從新 word 的頭開始掃
+                else:
+                    c += 1  # c會等於 len(word)-2，將不會繼續下一次迴圈
             else:
                 c += 1
     for ele in to_add:
@@ -94,8 +98,9 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
         unmatched_words.remove(ele)
     # print('unmatched words\t:', unmatched_words)
 
-    # # --- 兩個字相同且其相對位置相同的 再配對 ---
-    target = dict()
+    # -3.2 兩個字相同且其相對位置相同的 再配對
+
+    target = dict()     # target 為所有 unmatched_student 產生的 3個 mask
     to_remove = set()
     for name in unmatched_students:
         for mask in [name[0:2] + '.', name[0] + '.' + name[2], '.' + name[1:3]]:
@@ -107,7 +112,7 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
     for ele in to_remove:
         del target[ele]
     # print(target)
-    to_add, to_remove = set(), set()
+    to_add, to_remove = [], []
     for word in unmatched_words:
         if len(word) == 1:
             continue
@@ -119,40 +124,44 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
                     except KeyError:
                         pass
                         # print('文字重複辨識，或兩人名字兩字不相同辨識成相同，導致重複 remove / 學生名字:', target[mask], '/ mask:', mask)
-                    to_remove.add(word)
+                    to_remove.append(word)
                     break
             continue
         c = 0
-        while c < len(word) - 2:
-            for i, mask in enumerate([word[c:c+2] + '.', word[c] + '.' + word[c+2], '.' + word[c+1:c+3]]):
+        while c < len(word) - 2:    # c只會逐步+1，或可能在途中歸 0 並且減少 len(word)
+            for m, mask in enumerate([word[c:c+2] + '.', word[c] + '.' + word[c+2], '.' + word[c+1:c+3]]):
                 if mask in target:
                     try:
                         unmatched_students.remove(target[mask])
                     except KeyError:
                         pass
                         # print('文字重複辨識，或兩人名字兩字不相同辨識成相同，導致重複 remove / 學生名字:', target[mask], '/ mask:', mask)
-                    to_remove.add(word)
+                    to_remove.append(word)
                     # 如果 '.' 不是夾在中間，就只要以兩字做分割，否則一樣三字
                     # 但若 '.' 的那側只剩它一個字了，代表那個字大概只是辨識錯字，就不用切出來了
                     if c != 0:
-                        to_add.add(word[:c+1 if i == 2 else c])
+                        to_add.append(word[:c+1 if m == 2 else c])
                     if c + 3 != len(word):
-                        to_add.add(word[c+2 if i == 0 else c+3:])
-                    c += 2 if (i == 0 and c + 3 != len(word)) else 3
-                    break
+                        word = word[c+2 if m == 0 else c+3:]    # 將當前處理的 word 替換為剩下的這段
+                        to_add.append(word)
+                        c = 0   # 從新 word 的頭開始掃
+                    else:
+                        c += 1  # c會等於 len(word)-2，將不會繼續下一次迴圈
+                    # c += 2 if (m == 0 and c + 3 != len(word)) else 3
+                    break   # 不看剩下的 mask
             else:
                 c += 1
     for ele in to_add:
         unmatched_words.add(ele)
     for ele in to_remove:
         unmatched_words.remove(ele)
-    # print('unmatched words\t:', unmatched_words)
+    print('unmatched words\t:', unmatched_words)
 
-    # # --- 配對剩餘的 最好標示給使用者檢查 ---
+    # -3.3 配對剩餘的 最好標示給使用者檢查
 
-    # # --- 將沒配對上的框起來 ---
+    # -3.4 將沒配對上的框起來
 
-    # --- 回傳出勤記錄 ---
+    # -4. 回傳出勤記錄
     attendance = dict()
     for student in student_list:
         attendance[student] = 0 if student in unmatched_students else 1
