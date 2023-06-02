@@ -1,10 +1,23 @@
+from google.cloud import vision
 import json
 import os
-from google.cloud import vision
+import cv2
 
 
 # 設定 Google API 憑證環境變數
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = r'resource/seating-chart-checker-2389976159cf.json'
+
+
+# 可能只適用 sample 測資
+def _getRectCorners(vertices, width, height):
+    left, top = height, width
+    right, bottom = 0, 0
+    for vertex in vertices:
+        left = vertex.x if vertex.x < left else left
+        top = vertex.y if vertex.y < top else top
+        right = vertex.x if vertex.x > right else right
+        bottom = vertex.y if vertex.y > bottom else bottom
+    return (width-top, right), (width-bottom, left)
 
 
 def detect_text(imgPath: str) -> list:
@@ -26,7 +39,28 @@ def detect_text(imgPath: str) -> list:
     # print('Texts:')
     # for text in texts:
     #     print('\n"{}"'.format(text.description))
-    return texts[0].description.split('\n')
+
+    # print(texts)
+    # print(texts[1].bounding_poly.vertices)
+    # print(texts[1].description)
+
+    # img = cv2.imread(imgPath)
+    # height, width = img.shape[0:2]
+    # for text in texts[1:]:
+    #     left, top = height, width
+    #     right, bottom = 0, 0
+    #     for vertex in text.bounding_poly.vertices:
+    #         left = vertex.x if vertex.x < left else left
+    #         top = vertex.y if vertex.y < top else top
+    #         right = vertex.x if vertex.x > right else right
+    #         bottom = vertex.y if vertex.y > bottom else bottom
+    #     cv2.rectangle(img, (width-top, right), (width-bottom, left), (0, 150, 150), 5)
+    # img = cv2.resize(img, (1000, 750))
+    # cv2.imshow('image', img)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+    return texts
 
 
 def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
@@ -44,9 +78,13 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
 
     # -1. 影像前處理
 
+    img = cv2.imread(imgPath)
+    height, width = img.shape[:2]
+
     # -2. 辨識文字
 
-    word_list = detect_text(imgPath)
+    texts_info = detect_text(imgPath)   # 有做前處理的話 imgPath 要改掉
+    word_list = texts_info[0].description.split('\n')
     # word_list = ['日期:QCT/5', '俞浩君', '某洢岑', '張文虹', '范文瑄', 'FIL', 'TTF', '講臺', '陳長', '戴柏儀', '劉明融', '姜紹淳',
     #              'TOO', '技政偉孔繁道張慈芸大型陳慧慧', '劉品萱', '周远', '省達', '强思淇', '陈宇軒', '关系数', '天家', '陳芃铵',
     #              '黄雅欣', '駱宥亘|郭家佑']  # detect_text('resource/sheet_samples/1.jpg') 出來的結果
@@ -56,7 +94,8 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
 
     unmatched_words = set(word_list)
     unmatched_students = set(student_list)
-    # 防呆有學生完全同名
+
+    # 防呆有學生完全同名，同名的直接排除不進入配對，最後再補為缺席
     repeated_students = set()
     if len(unmatched_students) != len(student_list):
         for stud in unmatched_students:
@@ -64,6 +103,13 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
                 repeated_students.add(stud)
     for stud in repeated_students:
         unmatched_students.remove(stud)
+
+    # 標示框格用
+    text_frames = dict()    # {text: ((left, top), (right, bottom), color)}
+    unframed_texts = {text.description: [] for text in texts_info[1:]}  # 因可能有一樣的 detected_text，value將不只一個，故用 list
+    for text in texts_info[1:]:
+        unframed_texts[text.description].append(text.bounding_poly)
+    green_marks = []         # 在 -3.1 -3.2 match 到的文字段 (mask的.會還原為原字)
 
     # -3.1 完全相等的 先配對
 
@@ -75,11 +121,12 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
         c = 0
         while c < len(word)-2:  # c只會逐步+1，或可能在途中歸 0 並且減少 len(word)
             if word[c:c+3] in target:
+                green_marks.append(word[c:c+3])  # 標示框格用
                 try:
                     unmatched_students.remove(word[c:c+3])
                 except KeyError:
-                    pass
-                    # print('文字重複辨識，或兩人名字不相同辨識成完全相同，導致重複 remove / 學生名字:', target[word[c:c+3]])
+                    # pass
+                    print('文字重複辨識，或兩人名字不相同辨識成完全相同，導致重複 remove / 學生名字:', target[word[c:c+3]])
                 to_remove.append(word)
                 # 若此為長字串，就以該三字做分割，切出兩個字串，空字串就不用切出來了
                 if c != 0:
@@ -119,11 +166,12 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
         if len(word) == 2:
             for mask in [word + '.', '.' + word]:
                 if mask in target:
+                    green_marks.append(word)     # 標示框格用
                     try:
                         unmatched_students.remove(target[mask])
                     except KeyError:
-                        pass
-                        # print('文字重複辨識，或兩人名字兩字不相同辨識成相同，導致重複 remove / 學生名字:', target[mask], '/ mask:', mask)
+                        # pass
+                        print('文字重複辨識，或兩人名字兩字不相同辨識成相同，導致重複 remove / 學生名字:', target[mask], '/ mask:', mask)
                     to_remove.append(word)
                     break
             continue
@@ -131,11 +179,12 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
         while c < len(word) - 2:    # c只會逐步+1，或可能在途中歸 0 並且減少 len(word)
             for m, mask in enumerate([word[c:c+2] + '.', word[c] + '.' + word[c+2], '.' + word[c+1:c+3]]):
                 if mask in target:
+                    green_marks.append(word[c:c+3])  # 標示框格用
                     try:
                         unmatched_students.remove(target[mask])
                     except KeyError:
-                        pass
-                        # print('文字重複辨識，或兩人名字兩字不相同辨識成相同，導致重複 remove / 學生名字:', target[mask], '/ mask:', mask)
+                        # pass
+                        print('文字重複辨識，或兩人名字兩字不相同辨識成相同，導致重複 remove / 學生名字:', target[mask], '/ mask:', mask)
                     to_remove.append(word)
                     # 如果 '.' 不是夾在中間，就只要以兩字做分割，否則一樣三字
                     # 但若 '.' 的那側只剩它一個字了，代表那個字大概只是辨識錯字，就不用切出來了
@@ -157,11 +206,42 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
         unmatched_words.remove(ele)
     print('unmatched words\t:', unmatched_words)
 
-    # -3.3 配對剩餘的 最好標示給使用者檢查
+    # -3.3 標示綠色框
 
-    # -3.4 將沒配對上的框起來
+    to_frame = set()
+    for mark in green_marks:
+        if mark in unframed_texts:
+            to_frame.add(mark)
+        elif len(mark) == 3:
+            for segm in [mark[:2], mark[1:], mark[0], mark[1], mark[2]]:
+                if segm in unframed_texts:
+                    to_frame.add(segm)
+        elif len(mark) == 2:
+            for segm in [mark[0], mark[1]]:
+                if segm in unframed_texts:
+                    to_frame.add(segm)
+    for ele in to_frame:
+        for unframed_text in unframed_texts[ele]:  # 可能有一樣的 detected_text，通常只有一個
+            corners = _getRectCorners(unframed_text.vertices, width, height)
+            cv2.rectangle(img, corners[0], corners[1], (0, 150, 0), 3)
+        del unframed_texts[ele]
+
+    # -3.4 配對剩餘的 標示為黃色框
+
+    # -3.5 剩下沒配對上的 標示為紅色框
+
+    for _list in unframed_texts.values():
+        for unframed_text in _list:  # 可能有一樣的 detected_text，通常只有一個
+            corners = _getRectCorners(unframed_text.vertices, width, height)
+            cv2.rectangle(img, corners[0], corners[1], (50, 50, 255), 3)
 
     # -4. 回傳出勤記錄
+
+    img = cv2.resize(img, (1000, 750))
+    cv2.imshow('image', img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
     attendance = dict()
     for student in student_list:
         attendance[student] = 0 if student in unmatched_students else 1
