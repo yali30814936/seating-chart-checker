@@ -1,6 +1,6 @@
-import IdentifyModule
+# import IdentifyModule
 from Course import Course
-
+from RollcallRecord import *
 from tkinter import *
 from tkinter import messagebox
 from tkinter import ttk
@@ -20,7 +20,8 @@ class Application:
             Course("性別、身體與意識型態", "B9M014TV"),
         ]
         self.operating_course = None
-
+        self.windows = []
+        self.rt_flag = 0
         self.open_homepage()
 
     def check_rollcall(self):
@@ -41,6 +42,20 @@ class Application:
     def open_student_list(self):
         student_list = self.operating_course.get_student_list()
         # set UI show the student_list
+        self.windows.destroy()
+        window = Tk()
+        window.geometry("1000x700")
+        window.title("課程點名系統")
+        self.windows = window
+        button1 = tk.Button(
+            window,
+            text="返回主頁面",
+            command=lambda: window.destroy(),
+            width=20,
+            height=2,
+        )
+        button1.pack(padx=10, pady=10)
+        window.mainloop()
 
     def adding_student(self):
         # 使用者輸入欲新增學生之 name, ID, department
@@ -56,54 +71,93 @@ class Application:
         dates = self.operating_course.get_dates_of_rollcall_records()
         # set UI 列出所有日期的按鈕
 
-    def open_a_rollcall_record(self, date):
+    def open_a_rollcall_record(self, date=0):
         # set UI 進入對點名紀錄操作頁面
-        pass
+        self.windows.destroy()
+        window = Tk()
+        window.geometry("1000x700")
+        window.title("課程點名系統")
+        self.windows = window
+        button1 = tk.Button(
+            window, text="返回主畫面", command=window.destroy(), width=20, height=2
+        )
+        button1.pack(padx=10, pady=10)
+        window.mainloop()
 
     def editing_rollcall_record(self):
         # 待定義
         pass
 
     def open_homepage(self):
-        self.operating_course = None
+        while 1:
+            self.operating_course = None
+            # set UI 把所有課程按鈕列出來
+            window = Tk()
+            self.windows = window
+            window.geometry("1000x700")
+            window.title("課程點名系統")
+            # 上方圖片
+            image = Image.open("tmp.png")
+            image = image.resize((500, 500))
+            photo = ImageTk.PhotoImage(image)
+            picture = tk.Label(window, image=photo)
+            picture.pack()
 
-        # set UI 把所有課程按鈕列出來
-        root = Tk()
-        root.geometry("1000x700")
-        root.title("課程點名系統")
+            # 中間選單
+            selected_option = tk.StringVar()
+            combo_box = ttk.Combobox(window, textvariable=selected_option)
+            value = []
+            for c in self.course_list:
+                value.append(c.name)
+            combo_box["values"] = value
+            combo_box.pack()
+            button1 = tk.Button(
+                window,
+                text="選擇課程",
+                command=lambda: (self.open_a_course(combo_box.current())),
+                width=20,
+                height=2,
+            )
+            button1.pack(padx=10, pady=10)
+            button2 = tk.Button(
+                window, text="新增課程", command=self.adding_course, width=20, height=2
+            )
+            button2.pack(padx=10, pady=10)
+            window.mainloop()
+
+    def open_a_course(self, index):
+        self.windows.destroy()
+        self.operating_course = self.course_list[index]
+        window_cource = Tk()
+        window_cource.geometry("1000x700")
+        window_cource.title("課程點名系統")
+        self.windows = window_cource
         # 上方圖片
-        image = Image.open("tmp.png")
-        image = image.resize((500, 500))
-        photo = ImageTk.PhotoImage(image)
-        picture = tk.Label(root, image=photo)
-        picture.pack()
-
-        # 中間選單
-        selected_option = tk.StringVar()
-        combo_box = ttk.Combobox(root, textvariable=selected_option)
-        value = []
-        for c in self.course_list:
-            value.append(c.name)
-        combo_box["values"] = value
-        combo_box.pack()
         button1 = tk.Button(
-            root,
-            text="選擇課程",
-            command=lambda: self.open_a_course(combo_box.current()),
+            window_cource,
+            text="點名",
+            command=lambda: self.open_a_rollcall_record(),
             width=20,
             height=2,
         )
         button1.pack(padx=10, pady=10)
         button2 = tk.Button(
-            root, text="新增課程", command=self.adding_course, width=20, height=2
+            window_cource,
+            text="學生名單",
+            command=lambda: self.open_student_list(),
+            width=20,
+            height=2,
         )
         button2.pack(padx=10, pady=10)
-        root.mainloop()
-
-    def open_a_course(self, index):
-        self.operating_course = self.course_list[index]
-        print(self.operating_course)
-        # set UI 進入對課程操作頁面
+        button3 = tk.Button(
+            window_cource,
+            text="返回",
+            command=lambda: window_cource.destroy(),
+            width=20,
+            height=2,
+        )
+        button3.pack(padx=10, pady=10)
+        window_cource.mainloop()
 
     def adding_course(self):
         # 使用者輸入 name, ID
