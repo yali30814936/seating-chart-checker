@@ -26,11 +26,13 @@ class Application:
     def check_rollcall(self):
         student_list = self.operating_course.get_student_list()
         # result = IdentifyModule.check_rollcall(self.photo_path, student_list)
-        result = RollcallRecord({
-                    "00000001": 0,
-                    "00000002": 0,
-                    "00000003": 0,
-                })
+        result = RollcallRecord(
+            {
+                "00000001": 0,
+                "00000002": 0,
+                "00000003": 0,
+            }
+        )
         date = "1120601"
         self.operating_course.add_rollcall_record(date, result)
         # switch to rollcall_record page to show the result
