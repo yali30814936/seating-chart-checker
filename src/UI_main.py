@@ -79,7 +79,7 @@ class Application:
         window.title("課程點名系統")
         self.windows = window
         button1 = tk.Button(
-            window, text="返回主畫面", command=window.destroy(), width=20, height=2
+            window, text="返回主畫面", command=lambda: window.destroy(), width=20, height=2
         )
         button1.pack(padx=10, pady=10)
         window.mainloop()
@@ -132,7 +132,6 @@ class Application:
         window_cource.geometry("1000x700")
         window_cource.title("課程點名系統")
         self.windows = window_cource
-        # 上方圖片
         button1 = tk.Button(
             window_cource,
             text="點名",
