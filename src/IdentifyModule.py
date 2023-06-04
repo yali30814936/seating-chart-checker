@@ -1,7 +1,9 @@
 from google.cloud import vision
+from PIL import ImageFont, ImageDraw, Image
 import json
 import os
 import cv2
+import numpy as np
 
 
 # 設定 Google API 憑證環境變數
@@ -17,7 +19,16 @@ def _getRectCorners(vertices, width, height):
         top = vertex.y if vertex.y < top else top
         right = vertex.x if vertex.x > right else right
         bottom = vertex.y if vertex.y > bottom else bottom
-    return (width-top, right), (width-bottom, left)
+    return (width-bottom, left), (width-top, right)
+
+
+def put_chinese_text(img, string, pos, color):
+    font_path = 'resource/NotoSansTC-Bold.otf'   # 設定字型路徑
+    font = ImageFont.truetype(font_path, 50)     # 設定字型與文字大小
+    imgPil = Image.fromarray(img)   # 將 img 轉換成 PIL 影像
+    draw = ImageDraw.Draw(imgPil)
+    draw.text(pos, string, fill=color, font=font)  # 畫入文字，\n 表示換行
+    return np.array(imgPil)     # 將 PIL 影像轉換成 numpy 陣列
 
 
 def detect_text(imgPath: str) -> list:
@@ -71,6 +82,7 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
         imgPath (str): the image path to detect.
         student_list (list): a list of all student names, currently haven't considered non-three-word names yet.
     Returns:
+        image ndarray: image that display the roll call result.
         dict[str, int]: attendance status.
             str: all students in student_list.
             int: their attendance status. (0:缺席 1:出席)
@@ -94,7 +106,6 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
 
     unmatched_words = set(word_list)
     unmatched_students = set(student_list)
-
     # 防呆有學生完全同名，同名的直接排除不進入配對，最後再補為缺席
     repeated_students = set()
     if len(unmatched_students) != len(student_list):
@@ -105,15 +116,15 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
         unmatched_students.remove(stud)
 
     # 標示框格用
-    text_frames = dict()    # {text: ((left, top), (right, bottom), color)}
-    unframed_texts = {text.description: [] for text in texts_info[1:]}  # 因可能有一樣的 detected_text，value將不只一個，故用 list
+    # dict[text: their bounding_poly (list)]，因可能有一樣的 detected_text，value將不只一個，故用 list
+    unframed_texts = {text.description: [] for text in texts_info[1:]}
     for text in texts_info[1:]:
         unframed_texts[text.description].append(text.bounding_poly)
-    green_marks = []         # 在 -3.1 -3.2 match 到的文字段 (mask的.會還原為原字)
 
     # -3.1 完全相等的 先配對
 
     target = unmatched_students
+    green_marks = []    # 在 -3.1 -3.2 match 到的文字段 (mask的.會還原為原字)
     to_add, to_remove = [], []
     for word in unmatched_words:
         if len(word) < 3:
@@ -204,7 +215,7 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
         unmatched_words.add(ele)
     for ele in to_remove:
         unmatched_words.remove(ele)
-    print('unmatched words\t:', unmatched_words)
+    # print('unmatched words\t:', unmatched_words)
 
     # -3.3 標示綠色框
 
@@ -223,22 +234,83 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
     for ele in to_frame:
         for unframed_text in unframed_texts[ele]:  # 可能有一樣的 detected_text，通常只有一個
             corners = _getRectCorners(unframed_text.vertices, width, height)
-            cv2.rectangle(img, corners[0], corners[1], (0, 150, 0), 3)
+            cv2.rectangle(img, corners[0], corners[1], (0, 120, 0), 3)
         del unframed_texts[ele]
 
-    # -3.4 配對剩餘的 標示為黃色框
+    # -3.4 所有人裡只出現一次的字 且 偵測文字中也只出現一次 再配對
 
-    # -3.5 剩下沒配對上的 標示為紅色框
+    # dict[所有剩餘學生中只出現一次的字: 該student]
+    stud_with_only_char = dict()
+    to_remove = set()
+    for stud in unmatched_students:
+        for ch in stud:
+            if ch in stud_with_only_char:
+                to_remove.add(ch)   # 該字可能出現三次，故不能直接 del
+            else:
+                stud_with_only_char[ch] = stud
+    for ch in to_remove:
+        del stud_with_only_char[ch]
+    # dict[所有剩餘學生中只出現一次 且 所有剩餘word中也只出現一次 的字: (該student, 該word)]
+    match_pair_with_only_char = dict()
+    to_remove = set()
+    for word in unmatched_words:
+        for ch in word:
+            if ch in stud_with_only_char:
+                if ch in match_pair_with_only_char:
+                    to_remove.add(ch)   # 該字可能出現三次，故不能直接 del
+                else:
+                    match_pair_with_only_char[ch] = (stud_with_only_char[ch], word)
+    for ch in to_remove:
+        del match_pair_with_only_char[ch]
+
+    for match_pair in match_pair_with_only_char.values():
+        try:
+            unmatched_students.remove(match_pair[0])
+        except KeyError:
+            print("可能發生一個簽名被偵測為兩個word的狀況，或發生像 8.jpg 那樣(abc->ac)，目前沒想過其他可能")
+        try:
+            unmatched_words.remove(match_pair[1])   # 目前後面沒再用到 unmatched_words，因此此 remove 沒特別設計，不然應該再切左右兩段出來
+        except KeyError:
+            print("可能發生一個簽名被偵測為兩個word的狀況，或發生像 8.jpg 那樣(abc->ac)，目前沒想過其他可能")
+
+    print("yellow-matched\t:", match_pair_with_only_char)
+    print('unmatched words\t:', unmatched_words)
+
+    # -3.5 標示黃色框
+
+    to_remove = set()
+    frame_times = 0     # 印出用
+    for text in unframed_texts:
+        lay = 0
+        for ch in text:
+            if ch in match_pair_with_only_char:
+                lay += 1
+                frame_times += 1    # 相同的 detected text 算一次
+                for unframed_text in unframed_texts[text]:
+                    corners = _getRectCorners(unframed_text.vertices, width, height)
+                    cv2.rectangle(img, corners[0], corners[1], (0, 200, 255), 3)
+                    img = put_chinese_text(img, match_pair_with_only_char[ch][0],
+                                           (corners[0][0], corners[0][1]-(75*lay)), (0, 150, 255))
+                to_remove.add(text)     # 複雜到不想解釋，總之用set保險
+        if lay > 1:
+            print("text重複黃標，已把疊起來的字移開")     # 應該極罕見
+    for ele in to_remove:
+        del unframed_texts[ele]
+    # 發生該黃標的 text 被重複綠標的情況
+    if len(match_pair_with_only_char) != frame_times:
+        print("yellow_match:", len(match_pair_with_only_char), '/ yellow_frame:', frame_times)
+
+    # -3.6 剩下沒配對上的 標示為紅色框
 
     for _list in unframed_texts.values():
         for unframed_text in _list:  # 可能有一樣的 detected_text，通常只有一個
             corners = _getRectCorners(unframed_text.vertices, width, height)
             cv2.rectangle(img, corners[0], corners[1], (50, 50, 255), 3)
 
-    # -4. 回傳出勤記錄
+    # -4. 回傳圖片出勤記錄
 
-    img = cv2.resize(img, (1000, 750))
-    cv2.imshow('image', img)
+    small_img = cv2.resize(img, (1000, 750))
+    cv2.imshow('image', small_img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
@@ -249,7 +321,7 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
     for student in repeated_students:
         attendance[student] = 0     # 給老師人工補點名
 
-    return attendance
+    return img, attendance
 
 
 if __name__ == '__main__':
@@ -265,21 +337,10 @@ if __name__ == '__main__':
     for i in range(1, 13):
         print('\n[test '+str(i)+'.jpg]')
 
-        attendance_record = check_rollcall('resource/sheet_samples/'+str(i)+'.jpg', student_list)
+        img, attendance_record = check_rollcall('resource/sheet_samples/'+str(i)+'.jpg', student_list)
 
         print('出席紀錄\t\t\t:', attendance_record)
-        count = sum(value == 1 for value in attendance_record.values())
-        total += count
-        print('出席率:', count/len(student_list))
-    print('\n平均出席率:', total/12/len(student_list))
-
-
-# if __name__ == '__main__':
-#     # 指定剛剛下載tesseract.exe的完整路徑
-#     pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-#     image = Image.open('source/1-2.jpg')
-#     # 這裡的lang就是剛剛下載的model
-#     text = pytesseract.image_to_string(image, lang='chi_tra')
-#     text = text.replace("\n", "").replace(" ", "")
-#     text = text.strip()
-#     print(text)
+        # count = sum(value == 1 for value in attendance_record.values())
+        # total += count
+        # print('出席率:', count/len(student_list))
+    # print('\n平均出席率:', total/12/len(student_list))
