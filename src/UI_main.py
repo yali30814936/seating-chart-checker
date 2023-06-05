@@ -127,6 +127,7 @@ class Application:
                 width=20,
                 height=2,
             )
+
             button2.pack(padx=10, pady=10)
             window.mainloop()
 
@@ -144,7 +145,7 @@ class Application:
             width=20,
             height=2,
         )
-        button1.pack(padx=10, pady=10)
+        button1.place(x=500, y=100)
         button2 = tk.Button(
             window_cource,
             text="學生名單",
@@ -152,7 +153,7 @@ class Application:
             width=20,
             height=2,
         )
-        button2.pack(padx=10, pady=10)
+        button2.place(x=500, y=200)
         button3 = tk.Button(
             window_cource,
             text="返回",
@@ -160,7 +161,20 @@ class Application:
             width=20,
             height=2,
         )
-        button3.pack(padx=10, pady=10)
+        button3.place(x=500, y=300)
+
+        listbox = tk.Listbox(window_cource, width=50, height=30)
+        # 添加項目到 Listbox
+        elements = ["Element 1", "Element 2", "Element 3", "Element 4"]  # 假設這是你的列表
+        for element in elements:
+            listbox.insert(tk.END, element)
+        # 綁定選擇事件處理函式
+        listbox.bind(
+            "<<ListboxSelect>>",
+            lambda: (print(listbox.get(listbox.curselection()))),
+        )
+        window_cource.grid_rowconfigure(0, weight=1)
+        listbox.place(x=100, y=100)
         window_cource.mainloop()
 
     def adding_course(self):
