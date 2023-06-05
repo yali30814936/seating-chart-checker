@@ -7,6 +7,7 @@ from tkinter import ttk
 import tkinter as tk
 from tkinter import filedialog
 from PIL import ImageTk, Image
+from tkinter import messagebox, simpledialog
 
 
 class Application:
@@ -120,7 +121,11 @@ class Application:
             )
             button1.pack(padx=10, pady=10)
             button2 = tk.Button(
-                window, text="新增課程", command=self.adding_course, width=20, height=2
+                window,
+                text="新增課程",
+                command=lambda: (self.adding_course(), window.destroy()),
+                width=20,
+                height=2,
             )
             button2.pack(padx=10, pady=10)
             window.mainloop()
@@ -160,9 +165,12 @@ class Application:
 
     def adding_course(self):
         # 使用者輸入 name, ID
-        name = ""
-        ID = ""
-        self.course_list.append(Course(name, ID))
+        name = simpledialog.askstring("課程：", "輸入課程名稱")
+        if name:
+            ID = simpledialog.askinteger("ID:", "輸入課程 ID")
+            if ID:
+                self.course_list.append(Course(name, ID))
+                messagebox.showinfo("新增目標", f"已新增目標：\nName: {name}\nID: {ID}")
 
 
 ctr = Application()
