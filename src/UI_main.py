@@ -165,7 +165,7 @@ class Application:
 
         listbox = tk.Listbox(window_cource, width=50, height=30)
         # 添加項目到 Listbox
-        elements = ["Element 1", "Element 2", "Element 3", "Element 4"]  # 假設這是你的列表
+        elements = self.operating_course.get_dates_of_rollcall_records()  # 假設這是你的列表
         for element in elements:
             listbox.insert(tk.END, element)
         # 綁定選擇事件處理函式
