@@ -38,6 +38,7 @@ class Course:
                     "00000001": 1,
                     "00000002": 0,
                     "00000003": 1,
+                    "01231245": 1,
                 }
             ),
         }
@@ -65,6 +66,8 @@ class Course:
     def get_dates_of_rollcall_records(self):
         return list(self._rollcall_records.keys())
 
-    def edit_rollcall_record(self):
-        # 待定義
-        pass
+    def get_rollcall_record(self, date):
+        return self._rollcall_records[date].attendance_list
+
+    def edit_rollcall_record(self, date, student_ID, attend_status):
+        self._rollcall_records[date].edit(student_ID, attend_status)

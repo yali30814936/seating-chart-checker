@@ -1,5 +1,5 @@
 # import IdentifyModule
-from Course import Course
+from Course import *
 from RollcallRecord import *
 from tkinter import *
 from tkinter import messagebox
@@ -118,11 +118,55 @@ class Application:
             )
 
     def removing_student(self, ID):
-        print(ID)
         self.operating_course.remove_student(ID)
 
-    def show_rollcall_records(self):
-        dates = self.operating_course.get_dates_of_rollcall_records()
+    def reload_tree(self, tree, rcord):
+        tree.delete(*tree.get_children())
+        tree.heading(1, text="學號")
+        tree.heading(2, text="有無出席")
+        for student_id, attendance in rcord.items():
+            tree.insert(
+                "",
+                tk.END,
+                text=student_id,
+                value=(
+                    student_id,
+                    attendance,
+                ),
+            )
+
+    def show_rollcall_records(self, dates):
+        window = Tk()
+        window.geometry("600x450")
+        window.title(dates)
+        tree = ttk.Treeview(window, columns=(1, 2), show="headings")
+        tree.configure(height=10)
+        tree.pack()
+        # 設置列標題
+        self.reload_tree(tree, self.operating_course.get_rollcall_record(dates))
+
+        button1 = tk.Button(
+            window, text="返回", command=lambda: window.destroy(), width=20, height=2
+        )
+        button1.place(x=350, y=250)
+        button2 = tk.Button(
+            window,
+            text="編輯",
+            command=lambda: (
+                self.editing_rollcall_record(
+                    dates,
+                    tree.item(tree.selection())["values"],
+                    tree.item(tree.selection())["text"],
+                ),
+                self.reload_tree(
+                    tree, self.operating_course.get_rollcall_record(dates)
+                ),
+            ),
+            width=20,
+            height=2,
+        )
+        button2.place(x=100, y=250)
+        window.mainloop()
         # set UI 列出所有日期的按鈕
 
     def open_file(self, canvas):
@@ -151,7 +195,7 @@ class Application:
         button2 = tk.Button(
             window,
             text="選擇圖片",
-            command=lambda: (self.open_file(canvas), print(self.file_path)),
+            command=lambda: (self.open_file(canvas)),
             width=20,
             height=2,
         )
@@ -177,9 +221,8 @@ class Application:
         canvas.place(x=100, y=100)
         window.mainloop()
 
-    def editing_rollcall_record(self):
-        # 待定義
-        pass
+    def editing_rollcall_record(self, date, std, id):
+        self.operating_course.edit_rollcall_record(date, id, (std[1] + 1) % 2)
 
     def open_homepage(self):
         while 1:
@@ -258,13 +301,15 @@ class Application:
         # list 全部點名紀錄
         listbox = tk.Listbox(window_cource, width=50, height=30)
         # 添加項目到 Listbox
-        elements = self.operating_course.get_dates_of_rollcall_records()  # 假設這是你的列表
+        elements = self.operating_course.get_dates_of_rollcall_records()
         for element in elements:
             listbox.insert(tk.END, element)
         # 綁定選擇事件處理函式
         listbox.bind(
             "<<ListboxSelect>>",
-            lambda event: print(listbox.curselection()),
+            lambda event: self.show_rollcall_records(
+                listbox.get(listbox.curselection())
+            ),
         )
 
         listbox.place(x=100, y=100)
@@ -272,12 +317,11 @@ class Application:
 
     def adding_course(self):
         # 使用者輸入 name, ID
-        name = simpledialog.askstring("課程：", "輸入課程名稱")
-        if name:
-            ID = simpledialog.askinteger("ID:", "輸入課程 ID")
-            if ID:
-                self.course_list.append(Course(name, ID))
-                messagebox.showinfo("新增目標", f"已新增目標：\nName: {name}\nID: {ID}")
+        data = simpledialog.askstring("新增課程：", "輸入:課程名稱,ID\n\nex:軟體工程,B1234567")
+        datas = data.split(",")
+        if data:
+            self.course_list.append(Course(datas[0], datas[1]))
+            messagebox.showinfo("新增目標", f"已新增目標：\nName: {datas[0]}\nID: {datas[1]}")
 
 
 ctr = Application()
