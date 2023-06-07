@@ -1,6 +1,6 @@
+from typing import Tuple, Any, Dict, Optional, List, Union
 from google.cloud import vision
 from PIL import ImageFont, ImageDraw, Image
-import json
 import os
 import cv2
 import numpy as np
@@ -22,7 +22,7 @@ def _getRectCorners(vertices, width, height):
     return (width-bottom, left), (width-top, right)
 
 
-def put_chinese_text(img, string, pos, color):
+def _put_chinese_text(img, string, pos, color):
     font_path = 'resource/NotoSansTC-Bold.otf'   # 設定字型路徑
     font = ImageFont.truetype(font_path, 50)     # 設定字型與文字大小
     imgPil = Image.fromarray(img)   # 將 img 轉換成 PIL 影像
@@ -31,7 +31,7 @@ def put_chinese_text(img, string, pos, color):
     return np.array(imgPil)     # 將 PIL 影像轉換成 numpy 陣列
 
 
-def detect_text(imgPath: str) -> list:
+def _detect_text(imgPath: str) -> list:
     """
     Use Google cloud vision API to detect text.
     return a list of detected words.
@@ -74,7 +74,7 @@ def detect_text(imgPath: str) -> list:
     return texts
 
 
-def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
+def check_rollcall(imgPath: str, student_list: list[str]) -> tuple[Union[np.ndarray, Any], dict[str, int], list[str]]:
     """
     Detect text on the image, and match to the student list, and return the attendance status.
 
@@ -84,8 +84,9 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
     Returns:
         image ndarray: image that display the roll call result.
         dict[str, int]: attendance status.
-            str: all students in student_list.
+            str: all students in given student_list.
             int: their attendance status. (0:缺席 1:出席)
+        list[str]: a name list that records those who has been yellow-framed
     """
 
     # -1. 影像前處理
@@ -95,7 +96,7 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
 
     # -2. 辨識文字
 
-    texts_info = detect_text(imgPath)   # 有做前處理的話 imgPath 要改掉
+    texts_info = _detect_text(imgPath)   # 有做前處理的話 imgPath 要改掉
     word_list = texts_info[0].description.split('\n')
     # word_list = ['日期:QCT/5', '俞浩君', '某洢岑', '張文虹', '范文瑄', 'FIL', 'TTF', '講臺', '陳長', '戴柏儀', '劉明融', '姜紹淳',
     #              'TOO', '技政偉孔繁道張慈芸大型陳慧慧', '劉品萱', '周远', '省達', '强思淇', '陈宇軒', '关系数', '天家', '陳芃铵',
@@ -280,17 +281,19 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
 
     to_remove = set()
     frame_times = 0     # 印出用
+    yellow_framed_names = set()  # 回傳用
     for text in unframed_texts:
         lay = 0
         for ch in text:
             if ch in match_pair_with_only_char:
                 lay += 1
                 frame_times += 1    # 相同的 detected text 算一次
+                yellow_framed_names.add(match_pair_with_only_char[ch][0])
                 for unframed_text in unframed_texts[text]:
                     corners = _getRectCorners(unframed_text.vertices, width, height)
                     cv2.rectangle(img, corners[0], corners[1], (0, 200, 255), 3)
-                    img = put_chinese_text(img, match_pair_with_only_char[ch][0],
-                                           (corners[0][0], corners[0][1]-(75*lay)), (0, 150, 255))
+                    img = _put_chinese_text(img, match_pair_with_only_char[ch][0],
+                                            (corners[0][0], corners[0][1]-(75*lay)), (0, 150, 255))
                 to_remove.add(text)     # 複雜到不想解釋，總之用set保險
         if lay > 1:
             print("text重複黃標，已把疊起來的字移開")     # 應該極罕見
@@ -321,7 +324,7 @@ def check_rollcall(imgPath: str, student_list: list) -> dict[str, int]:
     for student in repeated_students:
         attendance[student] = 0     # 給老師人工補點名
 
-    return img, attendance
+    return img, attendance, list(yellow_framed_names)
 
 
 if __name__ == '__main__':
@@ -337,9 +340,10 @@ if __name__ == '__main__':
     for i in range(1, 13):
         print('\n[test '+str(i)+'.jpg]')
 
-        img, attendance_record = check_rollcall('resource/sheet_samples/'+str(i)+'.jpg', student_list)
+        img, attendance_record, yellow_list = check_rollcall('resource/sheet_samples/'+str(i)+'.jpg', student_list)
 
         print('出席紀錄\t\t\t:', attendance_record)
+        print('黃標名單\t\t\t:', yellow_list)
         # count = sum(value == 1 for value in attendance_record.values())
         # total += count
         # print('出席率:', count/len(student_list))
