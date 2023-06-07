@@ -23,7 +23,11 @@ class Application:
         self.operating_course = None
         self.windows = []
         self.file_path = "tmp.png"
+        self.flag = 1
         self.open_homepage()
+
+    def set_flag(self, k):
+        self.flag = k
 
     def check_rollcall(self):
         student_list = self.operating_course.get_student_list()
@@ -41,31 +45,80 @@ class Application:
         self.open_a_rollcall_record(date)
 
     def open_student_list(self):
-        student_list = self.operating_course.get_student_list()
         # set UI show the student_list
         self.windows.destroy()
-        window = Tk()
-        window.geometry("1000x700")
-        window.title("課程點名系統")
-        self.windows = window
-        button1 = tk.Button(
-            window,
-            text="返回主頁面",
-            command=lambda: window.destroy(),
-            width=20,
-            height=2,
-        )
-        button1.pack(padx=10, pady=10)
-        window.mainloop()
+        self.set_flag(1)
+        while self.flag:
+            window = Tk()
+            window.geometry("1000x700")
+            window.title("課程點名系統")
+            self.windows = window
+
+            # 按鈕一
+            button1 = tk.Button(
+                window,
+                text="返回主頁面",
+                command=lambda: (self.set_flag(0), window.destroy()),
+                width=20,
+                height=2,
+            )
+            button1.place(x=600, y=450)
+
+            tree = ttk.Treeview(window, columns=(1, 2, 3), show="headings")
+            tree.configure(height=20)
+            tree.pack()
+            # 設置列標題
+            tree.heading(1, text="姓名")
+            tree.heading(2, text="學號")
+            tree.heading(3, text="系級")
+            elements = self.operating_course.get_student_list()
+            for element in elements:
+                tree.insert(
+                    "",
+                    tk.END,
+                    values=(
+                        element.name,
+                        element.ID,
+                        element.department,
+                    ),
+                )
+
+            # 新增學生按鈕
+            button2 = tk.Button(
+                window,
+                text="新增學生",
+                command=lambda: (self.adding_student(), window.destroy()),
+                width=20,
+                height=2,
+            )
+            button2.place(x=200, y=450)
+
+            button3 = tk.Button(
+                window,
+                text="刪除學生",
+                command=lambda: (
+                    self.removing_student(tree.index(tree.focus())),
+                    window.destroy(),
+                ),
+                width=20,
+                height=2,
+            )
+            button3.place(x=400, y=450)
+            window.mainloop()
 
     def adding_student(self):
         # 使用者輸入欲新增學生之 name, ID, department
-        name, ID, department = "", "", ""
-        self.operating_course.add_student(name, ID, department)
+        name = simpledialog.askstring("新增學生", "格式 : 學生姓名,學號,系級\n\nex:王大明,00001,資工系")
 
-    def removing_student(self):
-        # 使用者輸入欲新增學生之 ID
-        ID = ""
+        data = name.split(",")
+        if name:
+            self.operating_course.add_student(data[0], data[1], data[2])
+            messagebox.showinfo(
+                "新增目標", f"已新增目標：\nName: {data[0]}\nID: {data[1]}\n系級:{data[2]}"
+            )
+
+    def removing_student(self, ID):
+        print(ID)
         self.operating_course.remove_student(ID)
 
     def show_rollcall_records(self):
@@ -202,6 +255,7 @@ class Application:
         )
         button3.place(x=500, y=300)
 
+        # list 全部點名紀錄
         listbox = tk.Listbox(window_cource, width=50, height=30)
         # 添加項目到 Listbox
         elements = self.operating_course.get_dates_of_rollcall_records()  # 假設這是你的列表
@@ -210,9 +264,9 @@ class Application:
         # 綁定選擇事件處理函式
         listbox.bind(
             "<<ListboxSelect>>",
-            lambda: (print(listbox.get(listbox.curselection()))),
+            lambda event: print(listbox.curselection()),
         )
-        window_cource.grid_rowconfigure(0, weight=1)
+
         listbox.place(x=100, y=100)
         window_cource.mainloop()
 
