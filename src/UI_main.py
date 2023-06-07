@@ -22,7 +22,7 @@ class Application:
         ]
         self.operating_course = None
         self.windows = []
-        self.rt_flag = 0
+        self.file_path = "tmp.png"
         self.open_homepage()
 
     def check_rollcall(self):
@@ -72,6 +72,16 @@ class Application:
         dates = self.operating_course.get_dates_of_rollcall_records()
         # set UI 列出所有日期的按鈕
 
+    def open_file(self, canvas):
+        self.file_path = filedialog.askopenfilename()  # 讓使用者選擇檔案
+        if self.file_path:
+            with Image.open(self.file_path) as image:
+                image = image.resize((500, 500))
+                photo = ImageTk.PhotoImage(image)
+                canvas.delete("all")  # 清空畫布
+                canvas.create_image(0, 0, anchor="nw", image=photo)
+                canvas.image = photo
+
     def open_a_rollcall_record(self, date=0):
         # set UI 進入對點名紀錄操作頁面
         self.windows.destroy()
@@ -82,7 +92,36 @@ class Application:
         button1 = tk.Button(
             window, text="返回主畫面", command=lambda: window.destroy(), width=20, height=2
         )
-        button1.pack(padx=10, pady=10)
+        button1.place(x=600, y=300)
+
+        # 圖片路徑
+        button2 = tk.Button(
+            window,
+            text="選擇圖片",
+            command=lambda: (self.open_file(canvas), print(self.file_path)),
+            width=20,
+            height=2,
+        )
+        button2.place(x=600, y=100)
+
+        # 確定點名 ### 點名function放這裡
+        button2 = tk.Button(
+            window,
+            text="確定點名",
+            command=lambda: (),
+            width=20,
+            height=2,
+        )
+        button2.place(x=600, y=200)
+
+        # 畫面暫時顯示
+        image = Image.open("tmp.png")
+        image = image.resize((500, 500))
+        init_photo = ImageTk.PhotoImage(image)
+        canvas = tk.Canvas(window, width=400, height=400)
+        canvas.create_image(0, 0, anchor="nw", image=init_photo)
+        canvas.image = init_photo
+        canvas.place(x=100, y=100)
         window.mainloop()
 
     def editing_rollcall_record(self):
