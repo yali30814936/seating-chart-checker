@@ -116,7 +116,7 @@ class Course:
     def _save_rollcall_record(self, date:str):
         _fn = os.path.join(_DATA_DIR, self._ID, date+".yaml")
         with open(_fn, 'w') as fp:
-            yaml.dump(self._rollcall_records[date].attendent_list, fp, Dumper)
+            yaml.dump(self._rollcall_records[date].attendance_list, fp, Dumper)
 
     def get_dates_of_rollcall_records(self):
         if self._rollcall_records == None:
@@ -124,22 +124,24 @@ class Course:
         return list(self._rollcall_records.keys())
 
     def get_rollcall_record(self, date):
-        if not self._rollcall_records[date]:
+        if self._rollcall_records[date] == None:
             self._load_rollcall_record(date)
         return self._rollcall_records[date].attendance_list
 
     def add_rollcall_record(self, date, rollcall_result: dict()):
         self._rollcall_records[date] = RollcallRecord(rollcall_result)
+        self._save_rollcall_record(date)
 
     def edit_rollcall_record(self, date, student_ID, attend_status):
         self._rollcall_records[date].edit(student_ID, attend_status)
+        self._save_rollcall_record(date)
     
     def csv(self) -> tuple:
         return tuple(self._name, self._ID)
 
 
 def get_course_list():
-    """讀取課程清單
+    """讀取課程資料清單，注意回傳的是純文字
 
     Returns:
         list[tuple(str, str)]: (課名, 課號) 列表
@@ -176,6 +178,11 @@ def load_courses():
     return _res
 
 def save_courses(course_list:list):
+    """儲存課程物件清單
+
+    Args:
+        course_list (list): Course 陣列
+    """
     _path = os.path.join(_DATA_DIR, _COURSES_FN)
     with open(_path, 'w', encoding='utf-8') as fp:
         writer = csv.writer(fp)
