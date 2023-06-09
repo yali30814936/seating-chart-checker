@@ -8,18 +8,19 @@ import tkinter as tk
 from tkinter import filedialog
 from PIL import ImageTk, Image
 from tkinter import messagebox, simpledialog
-
+from Course import load_courses
 
 class Application:
     def __init__(self):
         # set UI...
 
         self.photo_path = "photo.jpg"
-        self.course_list = [
-            Course("人格發展與精神分析", "B9M014TG"),
-            Course("戰爭、武器、流亡詩人與全球公民", "B9M014V8"),
-            Course("性別、身體與意識型態", "B9M014TV"),
-        ]
+        self.course_list = load_courses()
+        # self.course_list = [
+        #     Course("人格發展與精神分析", "B9M014TG"),
+        #     Course("戰爭、武器、流亡詩人與全球公民", "B9M014V8"),
+        #     Course("性別、身體與意識型態", "B9M014TV"),
+        # ]
         self.operating_course = None
         self.windows = []
         self.file_path = "tmp.png"

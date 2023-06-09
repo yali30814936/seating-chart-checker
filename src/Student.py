@@ -4,8 +4,9 @@ class Student:
         self._ID = ID
         self._department = department
 
-    def __repr__(self) -> str:
-        return ','.join([self._name, self._ID, self._department])
+    def csv(self) -> tuple:
+        return tuple(self._name, self._ID, self._department)
+    
     @property
     def name(self):
         return self._name
