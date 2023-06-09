@@ -31,17 +31,15 @@ def _put_chinese_text(img, string, pos, color):
     return np.array(imgPil)     # 將 PIL 影像轉換成 numpy 陣列
 
 
-def _detect_text(imgPath: str) -> list:
+def _detect_text(img: np.ndarray) -> list:
     """
     Use Google cloud vision API to detect text.
     return a list of detected words.
     """
 
     client = vision.ImageAnnotatorClient()
-
-    with open(imgPath, 'rb') as image_file:
-        content = image_file.read()
-
+    success, encoded_image = cv2.imencode('.jpg', img)
+    content = encoded_image.tobytes()
     image = vision.Image(content=content)
 
     response = client.text_detection(image=image)
@@ -65,16 +63,15 @@ def check_rollcall(img: np.ndarray, student_list: list[str]) -> tuple[np.ndarray
         list[str]: a name list that records those who has been yellow-framed
     """
 
-    height, width = img.shape[:2]
-
     # -1. 辨識文字
 
-    texts_info = _detect_text(imgPath)   # 有做前處理的話 imgPath 要改掉
+    texts_info = _detect_text(img)
     word_list = texts_info[0].description.split('\n')
     # word_list = ['日期:QCT/5', '俞浩君', '某洢岑', '張文虹', '范文瑄', 'FIL', 'TTF', '講臺', '陳長', '戴柏儀', '劉明融', '姜紹淳',
     #              'TOO', '技政偉孔繁道張慈芸大型陳慧慧', '劉品萱', '周远', '省達', '强思淇', '陈宇軒', '关系数', '天家', '陳芃铵',
     #              '黄雅欣', '駱宥亘|郭家佑']  # detect_text('resource/sheet_samples/1.jpg') 出來的結果
     print('detected words\t:', word_list)
+    height, width = img.shape[:2]
 
     # -2. 配對演算法
 
@@ -313,8 +310,8 @@ if __name__ == '__main__':
     for i in range(1, 13):
         print('\n[test '+str(i)+'.jpg]')
 
-        img, attendance_record, yellow_list = check_rollcall('resource/sheet_samples/'+str(i)+'.jpg', student_list)
-
+        img, attendance_record, yellow_list = check_rollcall(cv2.imread('resource/sheet_samples/'+str(i)+'.jpg'),
+                                                             student_list)
         print('出席紀錄\t\t\t:', attendance_record)
         print('黃標名單\t\t\t:', yellow_list)
         # count = sum(value == 1 for value in attendance_record.values())
