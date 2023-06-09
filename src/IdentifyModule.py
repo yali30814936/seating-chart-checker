@@ -47,39 +47,15 @@ def _detect_text(imgPath: str) -> list:
     response = client.text_detection(image=image)
     texts = response.text_annotations
 
-    # print('Texts:')
-    # for text in texts:
-    #     print('\n"{}"'.format(text.description))
-
-    # print(texts)
-    # print(texts[1].bounding_poly.vertices)
-    # print(texts[1].description)
-
-    # img = cv2.imread(imgPath)
-    # height, width = img.shape[0:2]
-    # for text in texts[1:]:
-    #     left, top = height, width
-    #     right, bottom = 0, 0
-    #     for vertex in text.bounding_poly.vertices:
-    #         left = vertex.x if vertex.x < left else left
-    #         top = vertex.y if vertex.y < top else top
-    #         right = vertex.x if vertex.x > right else right
-    #         bottom = vertex.y if vertex.y > bottom else bottom
-    #     cv2.rectangle(img, (width-top, right), (width-bottom, left), (0, 150, 150), 5)
-    # img = cv2.resize(img, (1000, 750))
-    # cv2.imshow('image', img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-
     return texts
 
 
-def check_rollcall(imgPath: str, student_list: list[str]) -> tuple[Union[np.ndarray, Any], dict[str, int], list[str]]:
+def check_rollcall(img: np.ndarray, student_list: list[str]) -> tuple[np.ndarray, dict[str, int], list[str]]:
     """
     Detect text on the image, and match to the student list, and return the attendance status.
 
     Args:
-        imgPath (str): the image path to detect.
+        img (ndarray): the image to detect.
         student_list (list): a list of all student names, currently haven't considered non-three-word names yet.
     Returns:
         image ndarray: image that display the roll call result.
@@ -89,12 +65,9 @@ def check_rollcall(imgPath: str, student_list: list[str]) -> tuple[Union[np.ndar
         list[str]: a name list that records those who has been yellow-framed
     """
 
-    # -1. 影像前處理
-
-    img = cv2.imread(imgPath)
     height, width = img.shape[:2]
 
-    # -2. 辨識文字
+    # -1. 辨識文字
 
     texts_info = _detect_text(imgPath)   # 有做前處理的話 imgPath 要改掉
     word_list = texts_info[0].description.split('\n')
@@ -103,7 +76,7 @@ def check_rollcall(imgPath: str, student_list: list[str]) -> tuple[Union[np.ndar
     #              '黄雅欣', '駱宥亘|郭家佑']  # detect_text('resource/sheet_samples/1.jpg') 出來的結果
     print('detected words\t:', word_list)
 
-    # -3. 配對演算法
+    # -2. 配對演算法
 
     unmatched_words = set(word_list)
     unmatched_students = set(student_list)
@@ -122,7 +95,7 @@ def check_rollcall(imgPath: str, student_list: list[str]) -> tuple[Union[np.ndar
     for text in texts_info[1:]:
         unframed_texts[text.description].append(text.bounding_poly)
 
-    # -3.1 完全相等的 先配對
+    # -2.1 完全相等的 先配對
 
     target = unmatched_students
     green_marks = []    # 在 -3.1 -3.2 match 到的文字段 (mask的.會還原為原字)
@@ -157,7 +130,7 @@ def check_rollcall(imgPath: str, student_list: list[str]) -> tuple[Union[np.ndar
         unmatched_words.remove(ele)
     # print('unmatched words\t:', unmatched_words)
 
-    # -3.2 兩個字相同且其相對位置相同的 再配對
+    # -2.2 兩個字相同且其相對位置相同的 再配對
 
     target = dict()     # target 為所有 unmatched_student 產生的 3個 mask
     to_remove = set()
@@ -218,7 +191,7 @@ def check_rollcall(imgPath: str, student_list: list[str]) -> tuple[Union[np.ndar
         unmatched_words.remove(ele)
     # print('unmatched words\t:', unmatched_words)
 
-    # -3.3 標示綠色框
+    # -2.3 標示綠色框
 
     to_frame = set()
     for mark in green_marks:
@@ -238,7 +211,7 @@ def check_rollcall(imgPath: str, student_list: list[str]) -> tuple[Union[np.ndar
             cv2.rectangle(img, corners[0], corners[1], (0, 120, 0), 3)
         del unframed_texts[ele]
 
-    # -3.4 所有人裡只出現一次的字 且 偵測文字中也只出現一次 再配對
+    # -2.4 所有人裡只出現一次的字 且 偵測文字中也只出現一次 再配對
 
     # dict[所有剩餘學生中只出現一次的字: 該student]
     stud_with_only_char = dict()
@@ -277,7 +250,7 @@ def check_rollcall(imgPath: str, student_list: list[str]) -> tuple[Union[np.ndar
     print("yellow-matched\t:", match_pair_with_only_char)
     print('unmatched words\t:', unmatched_words)
 
-    # -3.5 標示黃色框
+    # -2.5 標示黃色框
 
     to_remove = set()
     frame_times = 0     # 印出用
@@ -303,14 +276,14 @@ def check_rollcall(imgPath: str, student_list: list[str]) -> tuple[Union[np.ndar
     if len(match_pair_with_only_char) != frame_times:
         print("yellow_match:", len(match_pair_with_only_char), '/ yellow_frame:', frame_times)
 
-    # -3.6 剩下沒配對上的 標示為紅色框
+    # -2.6 剩下沒配對上的 標示為紅色框
 
     for _list in unframed_texts.values():
         for unframed_text in _list:  # 可能有一樣的 detected_text，通常只有一個
             corners = _getRectCorners(unframed_text.vertices, width, height)
             cv2.rectangle(img, corners[0], corners[1], (50, 50, 255), 3)
 
-    # -4. 回傳圖片出勤記錄
+    # -3. 回傳圖片出勤記錄
 
     small_img = cv2.resize(img, (1000, 750))
     cv2.imshow('image', small_img)
