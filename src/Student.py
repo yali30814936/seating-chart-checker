@@ -5,7 +5,7 @@ class Student:
         self._department = department
 
     def csv(self) -> tuple:
-        return tuple(self._name, self._ID, self._department)
+        return tuple([self._name, self._ID, self._department])
     
     @property
     def name(self):
