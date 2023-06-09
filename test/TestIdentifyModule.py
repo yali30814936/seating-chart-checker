@@ -2,7 +2,6 @@ from src.IdentifyModule import check_rollcall
 import csv
 from unittest import TestCase
 import logging
-import unittest
 
 class TestIdentifyModule(TestCase):
     def test_check_rollcall(self):
