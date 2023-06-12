@@ -1,5 +1,7 @@
 import cv2
-
+import numpy as np
+from src.Course import Course
+from IdentifyModule import check_rollcall
 def load_image(path:str):
     """讀取圖片並回傳 np 格式的照片
 
@@ -23,11 +25,43 @@ def rotate_image(img):
     """
     return cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
 
-# if __name__ == "__main__":
-#     im = load_image(r"C:\Programing\Python\seating-chart-checker\resource\TestCase\2\1.jpg")
-#     print(type(im))
-#     cv2.imshow("test", im)
-#     cv2.waitKey(0)
-#     cv2.imshow("test", rotate_image(im))
-#     cv2.waitKey(0)
-#     cv2.destroyAllWindows()
+def check_rollcall_adapter(img:np.ndarray, course:Course):
+    """點名功能接口
+
+    Args:
+        img (np.ndarray): 影像 ndarray
+        course (Course): 課程物件
+
+    Returns:
+        來自 `IdentifyModule.check_rollcall()` 的原始輸出:
+        _image ndarray: image that display the roll call result.
+        dict[str, int]: attendance status.
+            str: all students in given student_list.
+            int: their attendance status. (0:缺席 1:出席)
+        list[str]: a name list that records those who has been yellow-framed
+    """
+    stu_list = [n.name for n in course.get_student_list()]
+    return check_rollcall(img, stu_list)
+
+def to_readable_attendence_list(attendence:dict, course:Course):
+    """將出席名單轉換成 「學號: [名字, 出席]」格式
+
+    Args:
+        attendence (dict): 出席清單，格式為「學號: 出席」
+        course (Course): 課程物件
+
+    Returns:
+        dict: 「學號: [名字, 出席]」格式的字典
+    """
+    stu_list = [[i.ID, i.name] for i in course.get_student_list()]
+    
+    res = attendence.copy()
+    
+    def search(ls:list, id:str):
+        for i in ls:
+            if i[0] == id:
+                return i[1]
+            
+    for s, a in res.items():
+        a = [search(stu_list, s), a]
+    return res

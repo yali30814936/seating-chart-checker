@@ -323,6 +323,7 @@ class Application:
         if data:
             self.course_list.append(Course(datas[0], datas[1]))
             messagebox.showinfo("新增目標", f"已新增目標：\nName: {datas[0]}\nID: {datas[1]}")
+            save_courses(self.course_list)
 
 
 ctr = Application()
