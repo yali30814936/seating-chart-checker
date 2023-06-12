@@ -59,8 +59,8 @@ class Application:
             # 按鈕一
             button1 = tk.Button(
                 window,
-                text="返回主頁面",
-                command=lambda: (self.set_flag(0), window.destroy()),
+                text="返回課程頁面",
+                command=lambda: (self.set_flag(0), self.open_a_course()),
                 width=20,
                 height=2,
             )
@@ -188,7 +188,7 @@ class Application:
         window.title("課程點名系統")
         self.windows = window
         button1 = tk.Button(
-            window, text="返回主畫面", command=lambda: window.destroy(), width=20, height=2
+            window, text="返回課程畫面", command=lambda: self.open_a_course(), width=20, height=2
         )
         button1.place(x=600, y=300)
 
@@ -226,50 +226,50 @@ class Application:
         self.operating_course.edit_rollcall_record(date, id, (std[1] + 1) % 2)
 
     def open_homepage(self):
-        while 1:
-            self.operating_course = None
-            # set UI 把所有課程按鈕列出來
-            window = Tk()
-            self.windows = window
-            window.geometry("1000x700")
-            window.title("課程點名系統")
-            # 上方圖片
-            image = Image.open("tmp.png")
-            image = image.resize((500, 500))
-            photo = ImageTk.PhotoImage(image)
-            picture = tk.Label(window, image=photo)
-            picture.pack()
+        self.operating_course = None
+        # set UI 把所有課程按鈕列出來
+        window = Tk()
+        self.windows = window
+        window.geometry("1000x700")
+        window.title("課程點名系統")
+        # 上方圖片
+        image = Image.open("tmp.png")
+        image = image.resize((500, 500))
+        photo = ImageTk.PhotoImage(image)
+        picture = tk.Label(window, image=photo)
+        picture.pack()
 
-            # 中間選單
-            selected_option = tk.StringVar()
-            combo_box = ttk.Combobox(window, textvariable=selected_option)
-            value = []
-            for c in self.course_list:
-                value.append(c.name)
-            combo_box["values"] = value
-            combo_box.pack()
-            button1 = tk.Button(
-                window,
-                text="選擇課程",
-                command=lambda: (self.open_a_course(combo_box.current())),
-                width=20,
-                height=2,
-            )
-            button1.pack(padx=10, pady=10)
-            button2 = tk.Button(
-                window,
-                text="新增課程",
-                command=lambda: (self.adding_course(), window.destroy()),
-                width=20,
-                height=2,
-            )
+        # 中間選單
+        selected_option = tk.StringVar()
+        combo_box = ttk.Combobox(window, textvariable=selected_option)
+        value = []
+        for c in self.course_list:
+            value.append(c.name)
+        combo_box["values"] = value
+        combo_box.pack()
+        button1 = tk.Button(
+            window,
+            text="選擇課程",
+            command=lambda: (self.open_a_course(combo_box.current())),
+            width=20,
+            height=2,
+        )
+        button1.pack(padx=10, pady=10)
+        button2 = tk.Button(
+            window,
+            text="新增課程",
+            command=lambda: {self.adding_course(), self.windows.destroy(), self.open_homepage()},
+            width=20,
+            height=2,
+        )
 
-            button2.pack(padx=10, pady=10)
-            window.mainloop()
+        button2.pack(padx=10, pady=10)
+        window.mainloop()
 
-    def open_a_course(self, index):
+    def open_a_course(self, index=None):
         self.windows.destroy()
-        self.operating_course = self.course_list[index]
+        if index is not None:
+            self.operating_course = self.course_list[index]
         window_cource = Tk()
         window_cource.geometry("1000x700")
         window_cource.title("課程點名系統")
@@ -292,8 +292,8 @@ class Application:
         button2.place(x=500, y=200)
         button3 = tk.Button(
             window_cource,
-            text="返回",
-            command=lambda: window_cource.destroy(),
+            text="返回首頁",
+            command=lambda: {self.windows.destroy(), self.open_homepage()},
             width=20,
             height=2,
         )
