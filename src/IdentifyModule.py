@@ -12,14 +12,22 @@ os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = r'resource/seating-chart-checker-
 
 # 可能只適用 sample 測資
 def _getRectCorners(vertices, width, height):
-    left, top = height, width
+    left, top = width, height
     right, bottom = 0, 0
     for vertex in vertices:
         left = vertex.x if vertex.x < left else left
         top = vertex.y if vertex.y < top else top
         right = vertex.x if vertex.x > right else right
         bottom = vertex.y if vertex.y > bottom else bottom
-    return (width-bottom, left), (width-top, right)
+    return (left, top), (right, bottom)
+    # left, top = height, width
+    # right, bottom = 0, 0
+    # for vertex in vertices:
+    #     left = vertex.x if vertex.x < left else left
+    #     top = vertex.y if vertex.y < top else top
+    #     right = vertex.x if vertex.x > right else right
+    #     bottom = vertex.y if vertex.y > bottom else bottom
+    # return (width-bottom, left), (width-top, right)
 
 
 def _put_chinese_text(img, string, pos, color):
