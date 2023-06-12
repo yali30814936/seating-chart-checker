@@ -1,6 +1,7 @@
 from Student import Student
 from RollcallRecord import RollcallRecord
 import yaml
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -10,6 +11,7 @@ import os
 
 _DATA_DIR = r"data"
 _COURSES_FN = r"courses.csv"
+
 
 class Course:
     def __init__(self, name, ID):
@@ -70,7 +72,7 @@ class Course:
             self._student_list = []
             if os.path.exists(_stls):
                 # 檔案存在則讀檔
-                with open(_stls, 'r', encoding='utf-8') as fp:
+                with open(_stls, "r", encoding="utf-8") as fp:
                     rows = csv.reader(fp)
                     for row in rows:
                         self._student_list.append(Student(row[0], row[1], row[2]))
@@ -79,22 +81,22 @@ class Course:
                 if not os.path.exists(_crdr):
                     os.mkdir(_crdr)
                 # 建檔
-                with open(_stls, 'w', encoding='utf-8') as fp:
+                with open(_stls, "w", encoding="utf-8") as fp:
                     fp.close()
-                    
+
         return self._student_list
 
     def _save_student_list(self):
         _stls = os.path.join(_DATA_DIR, self._ID, self._ID + ".csv")
-        with open(_stls, 'w', encoding='utf-8') as fp:
+        with open(_stls, "w", encoding="utf-8") as fp:
             writer = csv.writer(fp)
             for st in self._student_list:
                 writer.writerow(st.csv())
-    
+
     def add_student(self, name, ID, department):
         self._student_list.append(Student(name, ID, department))
         self._save_student_list()
-        
+
     def remove_student(self, idx):
         self._student_list.pop(idx)
         self._save_student_list()
@@ -104,18 +106,20 @@ class Course:
         self._rollcall_records = {}
         for file in _files:
             if file != f"{self._ID}.csv":  # ignoring student list
-                self._rollcall_records[os.path.splitext(os.path.split(file)[-1])[0]] = None
-                
-    def _load_rollcall_record(self, date:str):
-        _fn = os.path.join(_DATA_DIR, self._ID, date+".yaml")
+                self._rollcall_records[
+                    os.path.splitext(os.path.split(file)[-1])[0]
+                ] = None
+
+    def _load_rollcall_record(self, date: str):
+        _fn = os.path.join(_DATA_DIR, self._ID, date + ".yaml")
         self._rollcall_records[date] = {}
         if os.path.exists(_fn):
-            with open(_fn, 'r') as fp:
+            with open(_fn, "r") as fp:
                 self._rollcall_records[date] = RollcallRecord(yaml.load(fp, Loader))
-    
-    def _save_rollcall_record(self, date:str):
-        _fn = os.path.join(_DATA_DIR, self._ID, date+".yaml")
-        with open(_fn, 'w') as fp:
+
+    def _save_rollcall_record(self, date: str):
+        _fn = os.path.join(_DATA_DIR, self._ID, date + ".yaml")
+        with open(_fn, "w") as fp:
             yaml.dump(self._rollcall_records[date].attendance_list, fp, Dumper)
 
     def get_dates_of_rollcall_records(self):
@@ -135,7 +139,7 @@ class Course:
     def edit_rollcall_record(self, date, student_ID, attend_status):
         self._rollcall_records[date].edit(student_ID, attend_status)
         self._save_rollcall_record(date)
-    
+
     def csv(self) -> tuple:
         return tuple(self._name, self._ID)
 
@@ -151,7 +155,7 @@ def get_course_list():
     # 確認是否存在課程清單
     if os.path.exists(_cfile):
         # 讀取課程清單
-        with open(_cfile, 'r', encoding='utf-8') as fp:
+        with open(_cfile, "r", encoding="utf-8") as fp:
             rows = csv.reader(fp)
             for row in rows:
                 _res.append(tuple(row))
@@ -160,10 +164,11 @@ def get_course_list():
         if not os.path.exists(_DATA_DIR):
             os.mkdir(_DATA_DIR)
         # 開檔
-        with open(_cfile, 'w', encoding='utf-8') as fp:
+        with open(_cfile, "w", encoding="utf-8") as fp:
             fp.close()
-                
+
     return _res
+
 
 def load_courses():
     """讀取課程物件清單
@@ -177,13 +182,14 @@ def load_courses():
         _res.append(Course(course[0], course[1]))
     return _res
 
-def save_courses(course_list:list):
+
+def save_courses(course_list: list):
     """儲存課程物件清單
 
     Args:
         course_list (list): Course 陣列
     """
     _path = os.path.join(_DATA_DIR, _COURSES_FN)
-    with open(_path, 'w', encoding='utf-8') as fp:
+    with open(_path, "w", encoding="utf-8") as fp:
         writer = csv.writer(fp)
         writer.writerows(course_list)

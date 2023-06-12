@@ -10,6 +10,7 @@ from PIL import ImageTk, Image
 from tkinter import messagebox, simpledialog
 from Course import load_courses
 
+
 class Application:
     def __init__(self):
         # set UI...
@@ -174,7 +175,6 @@ class Application:
         self.file_path = filedialog.askopenfilename()  # 讓使用者選擇檔案
         if self.file_path:
             with Image.open(self.file_path) as image:
-                image = image.resize((500, 500))
                 photo = ImageTk.PhotoImage(image)
                 canvas.delete("all")  # 清空畫布
                 canvas.create_image(0, 0, anchor="nw", image=photo)
