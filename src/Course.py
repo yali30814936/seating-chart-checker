@@ -81,14 +81,14 @@ class Course:
                 if not os.path.exists(_crdr):
                     os.mkdir(_crdr)
                 # 建檔
-                with open(_stls, "w", encoding="utf-8") as fp:
+                with open(_stls, "w", encoding="utf-8", newline='') as fp:
                     fp.close()
 
         return self._student_list
 
     def _save_student_list(self):
         _stls = os.path.join(_DATA_DIR, self._ID, self._ID + ".csv")
-        with open(_stls, "w", encoding="utf-8") as fp:
+        with open(_stls, "w", encoding="utf-8", newline='') as fp:
             writer = csv.writer(fp)
             for st in self._student_list:
                 writer.writerow(st.csv())
@@ -119,7 +119,7 @@ class Course:
 
     def _save_rollcall_record(self, date: str):
         _fn = os.path.join(_DATA_DIR, self._ID, date + ".yaml")
-        with open(_fn, "w") as fp:
+        with open(_fn, "w", newline='') as fp:
             yaml.dump(self._rollcall_records[date].attendance_list, fp, Dumper)
 
     def get_dates_of_rollcall_records(self):
@@ -190,6 +190,6 @@ def save_courses(course_list: list):
         course_list (list): Course 陣列
     """
     _path = os.path.join(_DATA_DIR, _COURSES_FN)
-    with open(_path, "w", encoding="utf-8") as fp:
+    with open(_path, "w", encoding="utf-8", newline='') as fp:
         writer = csv.writer(fp)
-        writer.writerows(course_list)
+        writer.writerows([[c.name, c.ID] for c in course_list])
