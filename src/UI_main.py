@@ -6,9 +6,9 @@ from tkinter import messagebox
 from tkinter import ttk
 import tkinter as tk
 from tkinter import filedialog
-from PIL import ImageTk, Image
+from PIL import ImageTk, Image, ImageOps
 from tkinter import messagebox, simpledialog
-from Course import load_courses
+from Utils import *
 
 
 class Application:
@@ -26,6 +26,7 @@ class Application:
         self.windows = []
         self.file_path = "tmp.png"
         self.flag = 1
+        self.rotate = 0
         self.open_homepage()
 
     def set_flag(self, k):
@@ -110,13 +111,13 @@ class Application:
 
     def adding_student(self):
         # 使用者輸入欲新增學生之 name, ID, department
-        name = simpledialog.askstring("新增學生", "格式 : 學生姓名,學號,系級\n\nex:王大明,00001,資工系")
+        name = simpledialog.askstring("新增學生", "格式 : 學號,學生姓名,系級\n\nex:00001,王大明,資工系")
 
         data = name.split(",")
         if name:
             self.operating_course.add_student(data[0], data[1], data[2])
             messagebox.showinfo(
-                "新增目標", f"已新增目標：\nName: {data[0]}\nID: {data[1]}\n系級:{data[2]}"
+                "新增目標", f"已新增目標：\nName: {data[1]}\nID: {data[0]}\n系級:{data[2]}"
             )
 
     def removing_student(self, ID):
@@ -125,15 +126,17 @@ class Application:
     def reload_tree(self, tree, rcord):
         tree.delete(*tree.get_children())
         tree.heading(1, text="學號")
-        tree.heading(2, text="有無出席")
-        for student_id, attendance in rcord.items():
+        tree.heading(2, text="姓名")
+        tree.heading(3, text="有無出席")
+        for student_id, name in rcord.items():
             tree.insert(
                 "",
                 tk.END,
                 text=student_id,
                 value=(
                     student_id,
-                    attendance,
+                    name[0],
+                    name[1],
                 ),
             )
 
@@ -141,11 +144,17 @@ class Application:
         window = Tk()
         window.geometry("600x450")
         window.title(dates)
-        tree = ttk.Treeview(window, columns=(1, 2), show="headings")
+        tree = ttk.Treeview(window, columns=(1, 2, 3), show="headings")
         tree.configure(height=10)
         tree.pack()
         # 設置列標題
-        self.reload_tree(tree, self.operating_course.get_rollcall_record(dates))
+        self.reload_tree(
+            tree,
+            to_readable_attendence_list(
+                self.operating_course.get_rollcall_record(dates),
+                self.operating_course,
+            ),
+        )
 
         button1 = tk.Button(
             window, text="返回", command=lambda: window.destroy(), width=20, height=2
@@ -161,7 +170,11 @@ class Application:
                     tree.item(tree.selection())["text"],
                 ),
                 self.reload_tree(
-                    tree, self.operating_course.get_rollcall_record(dates)
+                    tree,
+                    to_readable_attendence_list(
+                        self.operating_course.get_rollcall_record(dates),
+                        self.operating_course,
+                    ),
                 ),
             ),
             width=20,
@@ -175,6 +188,19 @@ class Application:
         self.file_path = filedialog.askopenfilename()  # 讓使用者選擇檔案
         if self.file_path:
             with Image.open(self.file_path) as image:
+                image = ImageOps.exif_transpose(image)
+                width, height = image.size
+                # 定义目标尺寸
+                max_size = 400
+                # 计算等比例缩放后的尺寸
+                if width > height:
+                    new_width = max_size
+                    new_height = int(height * max_size / width)
+                else:
+                    new_height = max_size
+                    new_width = int(width * max_size / height)
+                # 进行等比例缩放
+                image = image.resize((new_width, new_height))
                 photo = ImageTk.PhotoImage(image)
                 canvas.delete("all")  # 清空畫布
                 canvas.create_image(0, 0, anchor="nw", image=photo)
@@ -188,9 +214,13 @@ class Application:
         window.title("課程點名系統")
         self.windows = window
         button1 = tk.Button(
-            window, text="返回課程畫面", command=lambda: self.open_a_course(), width=20, height=2
+            window,
+            text="返回課程畫面",
+            command=lambda: self.open_a_course(),
+            width=20,
+            height=2,
         )
-        button1.place(x=600, y=300)
+        button1.place(x=600, y=400)
 
         # 圖片路徑
         button2 = tk.Button(
@@ -202,19 +232,73 @@ class Application:
         )
         button2.place(x=600, y=100)
 
-        # 確定點名 ### 點名function放這裡
-        button2 = tk.Button(
+        def rt_picture(canvas):
+            img = load_image(self.file_path)
+            img = rotate_image(img)
+            img = Image.fromarray(img)
+            width, height = img.size
+            # 定义目标尺寸
+            max_size = 400
+            # 计算等比例缩放后的尺寸
+            if width > height:
+                new_width = max_size
+                new_height = int(height * max_size / width)
+            else:
+                new_height = max_size
+                new_width = int(width * max_size / height)
+            # 进行等比例缩放
+            img = img.resize((new_width, new_height))
+            photo = ImageTk.PhotoImage(img)
+            canvas.delete("all")  # 清空畫布
+            canvas.create_image(0, 0, anchor="nw", image=photo)
+            canvas.image = photo
+            self.rotate = 1
+
+        def rocall():
+            img = load_image(self.file_path)
+            if self.rotate:
+                img = rotate_image(img)
+            self.rotate = 0
+            result_img, dict, list = check_rollcall_adapter(img, self.operating_course)
+            print(dict, list)
+
+        ### 路徑不能包含中字
+        button4 = tk.Button(
             window,
-            text="確定點名",
-            command=lambda: (),
+            text="旋轉圖片",
+            command=lambda: rt_picture(canvas),
             width=20,
             height=2,
         )
-        button2.place(x=600, y=200)
+
+        button4.place(x=600, y=200)
+
+        # 確定點名 ### 點名function放這裡
+        button3 = tk.Button(
+            window,
+            text="確定點名",
+            command=lambda: rocall(),
+            width=20,
+            height=2,
+        )
+        button3.place(x=600, y=300)
 
         # 畫面暫時顯示
         image = Image.open("tmp.png")
-        image = image.resize((500, 500))
+        width, height = image.size
+        # 定义目标尺寸
+        max_size = 400
+        # 计算等比例缩放后的尺寸
+        if width > height:
+            new_width = max_size
+            new_height = int(height * max_size / width)
+        else:
+            new_height = max_size
+            new_width = int(width * max_size / height)
+
+        # 进行等比例缩放
+        image = image.resize((new_width, new_height))
+
         init_photo = ImageTk.PhotoImage(image)
         canvas = tk.Canvas(window, width=400, height=400)
         canvas.create_image(0, 0, anchor="nw", image=init_photo)
@@ -223,7 +307,7 @@ class Application:
         window.mainloop()
 
     def editing_rollcall_record(self, date, std, id):
-        self.operating_course.edit_rollcall_record(date, id, (std[1] + 1) % 2)
+        self.operating_course.edit_rollcall_record(date, id, (std[2] + 1) % 2)
 
     def open_homepage(self):
         self.operating_course = None
@@ -258,7 +342,11 @@ class Application:
         button2 = tk.Button(
             window,
             text="新增課程",
-            command=lambda: {self.adding_course(), self.windows.destroy(), self.open_homepage()},
+            command=lambda: {
+                self.adding_course(),
+                self.windows.destroy(),
+                self.open_homepage(),
+            },
             width=20,
             height=2,
         )

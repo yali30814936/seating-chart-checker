@@ -1,8 +1,11 @@
 import cv2
 import numpy as np
-from src.Course import Course
+from Course import *
 from IdentifyModule import check_rollcall
-def load_image(path:str):
+from PIL import Image, ImageTk
+
+
+def load_image(path: str):
     """讀取圖片並回傳 np 格式的照片
 
     Args:
@@ -13,7 +16,8 @@ def load_image(path:str):
     """
     img = cv2.imread(path)
     return img
-            
+
+
 def rotate_image(img):
     """順時針旋轉圖片 90 度
 
@@ -25,7 +29,8 @@ def rotate_image(img):
     """
     return cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
 
-def check_rollcall_adapter(img:np.ndarray, course:Course):
+
+def check_rollcall_adapter(img: np.ndarray, course: Course):
     """點名功能接口
 
     Args:
@@ -43,7 +48,8 @@ def check_rollcall_adapter(img:np.ndarray, course:Course):
     stu_list = [n.name for n in course.get_student_list()]
     return check_rollcall(img, stu_list)
 
-def to_readable_attendence_list(attendence:dict, course:Course):
+
+def to_readable_attendence_list(attendence: dict, course: Course):
     """將出席名單轉換成 「學號: [名字, 出席]」格式
 
     Args:
@@ -54,14 +60,14 @@ def to_readable_attendence_list(attendence:dict, course:Course):
         dict: 「學號: [名字, 出席]」格式的字典
     """
     stu_list = [[i.ID, i.name] for i in course.get_student_list()]
-    
     res = attendence.copy()
-    
-    def search(ls:list, id:str):
+
+    def search(ls: list, id: str):
         for i in ls:
-            if i[0] == id:
-                return i[1]
-            
+            if i[1] == id:
+                return i[0]
+
     for s, a in res.items():
-        a = [search(stu_list, s), a]
+        res[s] = [search(stu_list, s), a]
+
     return res
