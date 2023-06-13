@@ -225,14 +225,22 @@ class Application:
         txt = tk.Label(window, text="待確認名單")
         txt.place(x=725, y=50)
 
+        txt2 = tk.Label(window, text="日期:")
+        txt2.place(x=725, y=75)
+
+        text_box = tk.Text(window, width=10, height=4)
+        text_box.place(x=760, y=75)
+        text_box.insert(tk.END, "20230613")
+
         button3 = tk.Button(
             window,
             text="返回",
             command=lambda: {
-                window.destroy(),
                 self.operating_course.add_rollcall_record(
-                    str(date), docking_attendence(self.operating_course, dict)
+                    str(text_box.get("1.0", tk.END)).strip(),
+                    docking_attendence(self.operating_course, dict),
                 ),
+                window.destroy(),
             },
             width=20,
             height=2,
@@ -270,7 +278,7 @@ class Application:
             if a == 0:
                 listbox.insert(tk.END, s)
 
-        listbox.place(x=725, y=75)
+        listbox.place(x=725, y=100)
 
         # self.operating_course.add_rollcall_record(date, result)
         window.mainloop()
