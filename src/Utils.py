@@ -68,7 +68,35 @@ def to_readable_attendence_list(attendence: dict, course: Course):
             if i[1] == id:
                 return i[0]
 
-    for s, a in res.items():
-        res[s] = [search(stu_list, s), a]
+    for id, at in res.items():
+        res[id] = [search(stu_list, id), at]
 
+    return res
+
+
+def docking_attendence(course:Course, attendence:dict):
+    """將「姓名：出席」格式轉換為「學號：出席」格式
+
+    Args:
+        course (Course): 課程物件
+        attendence (dict): 「姓名：出席」格式的字典
+
+    Returns:
+        dict: 「學號：出席」格式的字典
+    """
+    stu_list = [[i.ID, i.name] for i in course.get_student_list()]
+    res = dict.fromkeys([i.name for i in course.get_student_list()], 0)
+    
+    def search(ls: list, name: str):
+        _res = []
+        for i in ls:
+            if i[0] == name:
+                _res.append(i[1])
+        return _res
+    
+    for nm, at in attendence.items():
+        s = search(stu_list, nm)
+        for id in s:
+            res[id] = at
+            
     return res
