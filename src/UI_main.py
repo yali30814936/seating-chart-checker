@@ -32,21 +32,6 @@ class Application:
     def set_flag(self, k):
         self.flag = k
 
-    def check_rollcall(self):
-        student_list = self.operating_course.get_student_list()
-        # result = IdentifyModule.check_rollcall(self.photo_path, student_list)
-        result = RollcallRecord(
-            {
-                "00000001": 0,
-                "00000002": 0,
-                "00000003": 0,
-            }
-        )
-        date = "1120601"
-        self.operating_course.add_rollcall_record(date, result)
-        # switch to rollcall_record page to show the result
-        self.open_a_rollcall_record(date)
-
     def open_student_list(self):
         # set UI show the student_list
         self.windows.destroy()
@@ -206,7 +191,7 @@ class Application:
                 canvas.create_image(0, 0, anchor="nw", image=photo)
                 canvas.image = photo
 
-    def rocall(self):
+    def rocall(self, date):
         img = load_image(self.file_path)
         if self.rotate:
             img = rotate_image(img)
@@ -243,21 +228,54 @@ class Application:
         button3 = tk.Button(
             window,
             text="返回",
-            command=lambda: {window.destroy()},
+            command=lambda: {
+                window.destroy(),
+                self.operating_course.add_rollcall_record(
+                    str(date), docking_attendence(self.operating_course, dict)
+                ),
+            },
             width=20,
             height=2,
         )
         button3.place(x=400, y=550)
 
+        def check(listbox, list):
+            index = listbox.curselection()
+            index = index[0]
+            name = listbox.get(index)
+            list[name] = 1
+            listbox.delete(index)
+            listbox.update()
+
+        button4 = tk.Button(
+            window,
+            text="確認出席",
+            command=lambda: {check(listbox, dict)},
+            width=20,
+            height=2,
+        )
+        button4.place(x=750, y=425)
+
         # 表格
         listbox = tk.Listbox(window, width=30, height=20)
         # 添加項目到 Listbox
+
         for element in list:
             listbox.insert(tk.END, element)
+
+        for line_index in range(0, len(list)):
+            listbox.itemconfigure(line_index, bg="yellow")
+
+        for s, a in dict.items():
+            if a == 0:
+                listbox.insert(tk.END, s)
+
         listbox.place(x=725, y=75)
+
+        # self.operating_course.add_rollcall_record(date, result)
         window.mainloop()
 
-    def open_a_rollcall_record(self, date=0):
+    def check_rollcall(self, date=0):
         # set UI 進入對點名紀錄操作頁面
         self.windows.destroy()
         window = Tk()
@@ -321,7 +339,7 @@ class Application:
         button3 = tk.Button(
             window,
             text="確定點名",
-            command=lambda: self.rocall(),
+            command=lambda: self.rocall(date),
             width=20,
             height=2,
         )
@@ -409,7 +427,7 @@ class Application:
         button1 = tk.Button(
             window_cource,
             text="點名",
-            command=lambda: self.open_a_rollcall_record(),
+            command=lambda: self.check_rollcall(),
             width=20,
             height=2,
         )
