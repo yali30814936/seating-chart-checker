@@ -206,6 +206,57 @@ class Application:
                 canvas.create_image(0, 0, anchor="nw", image=photo)
                 canvas.image = photo
 
+    def rocall(self):
+        img = load_image(self.file_path)
+        if self.rotate:
+            img = rotate_image(img)
+        self.rotate = 0
+        result_img, dict, list = check_rollcall_adapter(img, self.operating_course)
+
+        window = Tk()
+        window.geometry("1000x700")
+        window.title("點名結果")
+        result_img = cv2.cvtColor(result_img, cv2.COLOR_BGR2RGB)
+        result_img = Image.fromarray(result_img)
+        width, height = result_img.size
+        # 定义目标尺寸
+        max_size = 600
+        # 计算等比例缩放后的尺寸
+        if width > height:
+            new_width = max_size
+            new_height = int(height * max_size / width)
+        else:
+            new_height = max_size
+            new_width = int(width * max_size / height)
+        # 进行等比例缩放
+        result_img = result_img.resize((new_width, new_height))
+        # photo = ImageTk.PhotoImage(result_img)
+        photo = ImageTk.PhotoImage(result_img, master=window)
+        picture = tk.Label(window, image=photo)
+        picture.image = photo  # Store a reference to the PhotoImage object
+        picture.place(x=100, y=50)
+        window.photo = photo
+
+        txt = tk.Label(window, text="待確認名單")
+        txt.place(x=725, y=50)
+
+        button3 = tk.Button(
+            window,
+            text="返回",
+            command=lambda: {window.destroy()},
+            width=20,
+            height=2,
+        )
+        button3.place(x=400, y=550)
+
+        # 表格
+        listbox = tk.Listbox(window, width=30, height=20)
+        # 添加項目到 Listbox
+        for element in list:
+            listbox.insert(tk.END, element)
+        listbox.place(x=725, y=75)
+        window.mainloop()
+
     def open_a_rollcall_record(self, date=0):
         # set UI 進入對點名紀錄操作頁面
         self.windows.destroy()
@@ -235,6 +286,7 @@ class Application:
         def rt_picture(canvas):
             img = load_image(self.file_path)
             img = rotate_image(img)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(img)
             width, height = img.size
             # 定义目标尺寸
@@ -254,14 +306,6 @@ class Application:
             canvas.image = photo
             self.rotate = 1
 
-        def rocall():
-            img = load_image(self.file_path)
-            if self.rotate:
-                img = rotate_image(img)
-            self.rotate = 0
-            result_img, dict, list = check_rollcall_adapter(img, self.operating_course)
-            print(dict, list)
-
         ### 路徑不能包含中字
         button4 = tk.Button(
             window,
@@ -277,7 +321,7 @@ class Application:
         button3 = tk.Button(
             window,
             text="確定點名",
-            command=lambda: rocall(),
+            command=lambda: self.rocall(),
             width=20,
             height=2,
         )

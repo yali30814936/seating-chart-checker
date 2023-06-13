@@ -45,7 +45,8 @@ def check_rollcall_adapter(img: np.ndarray, course: Course):
             int: their attendance status. (0:缺席 1:出席)
         list[str]: a name list that records those who has been yellow-framed
     """
-    stu_list = [n.name for n in course.get_student_list()]
+
+    stu_list = [n.ID for n in course.get_student_list()]
     return check_rollcall(img, stu_list)
 
 
