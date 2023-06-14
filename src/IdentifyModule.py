@@ -34,7 +34,7 @@ def _getRectCorners(vertices, width, height):
 
 def _put_chinese_text(img, string, pos, color):
     font_path = "resource/NotoSansTC-Bold.otf"  # 設定字型路徑
-    font = ImageFont.truetype(font_path, 50)  # 設定字型與文字大小
+    font = ImageFont.truetype(font_path, img.shape[1]//40)  # 設定字型與文字大小
     imgPil = Image.fromarray(img)  # 將 img 轉換成 PIL 影像
     draw = ImageDraw.Draw(imgPil)
     draw.text(pos, string, fill=color, font=font)  # 畫入文字，\n 表示換行
@@ -238,7 +238,7 @@ def check_rollcall(
     for ele in to_frame:
         for unframed_text in unframed_texts[ele]:  # 可能有一樣的 detected_text，通常只有一個
             corners = _getRectCorners(unframed_text.vertices, width, height)
-            cv2.rectangle(img, corners[0], corners[1], (0, 120, 0), 3)
+            cv2.rectangle(img, corners[0], corners[1], (0, 120, 0), img.shape[1]//600)
         del unframed_texts[ele]
 
     # -2.4 所有人裡只出現一次的字 且 偵測文字中也只出現一次 再配對
@@ -296,12 +296,12 @@ def check_rollcall(
                 yellow_framed_names.add(match_pair_with_only_char[ch][0])
                 for unframed_text in unframed_texts[text]:
                     corners = _getRectCorners(unframed_text.vertices, width, height)
-                    cv2.rectangle(img, corners[0], corners[1], (0, 200, 255), 3)
+                    cv2.rectangle(img, corners[0], corners[1], (0, 200, 255), img.shape[1]//600)
                     img = _put_chinese_text(
                         img,
                         match_pair_with_only_char[ch][0],
-                        (corners[0][0], corners[0][1] - (75 * lay)),
-                        (0, 150, 255),
+                        (corners[0][0], corners[0][1] - (img.shape[1]//30 * lay)),
+                        (0, 150, 150),
                     )
                 to_remove.add(text)  # 複雜到不想解釋，總之用set保險
         if lay > 1:
@@ -322,10 +322,9 @@ def check_rollcall(
     for _list in unframed_texts.values():
         for unframed_text in _list:  # 可能有一樣的 detected_text，通常只有一個
             corners = _getRectCorners(unframed_text.vertices, width, height)
-            cv2.rectangle(img, corners[0], corners[1], (50, 50, 255), 3)
+            cv2.rectangle(img, corners[0], corners[1], (50, 50, 255), img.shape[1]//600)
 
     # -3. 回傳圖片出勤記錄
-    # 0613註解掉 避免ui調用時跳出圖片
     # small_img = cv2.resize(img, (1000, 750))
     # cv2.imshow("image", small_img)
     # cv2.waitKey(0)
