@@ -5,4 +5,4 @@
 ![image](https://github.com/yali30814936/seating-chart-checker/assets/73873427/8cf14b49-4908-4a02-86ea-5d22f74b5b5f)
 ![image](https://github.com/yali30814936/seating-chart-checker/assets/73873427/af6df1d6-efc8-4044-b3fa-67247ed8d399)
 ## 點名系統
-![image](https://github.com/yali30814936/seating-chart-checker/assets/73873427/960cc755-accb-4d07-9382-efe9f7c03725)
+![image](https://github.com/yali30814936/seating-chart-checker/assets/73873427/b95d2cf3-2edc-4dc1-8fd4-a2a2250296dd)
